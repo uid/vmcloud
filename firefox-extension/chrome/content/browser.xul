@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<overlay id="cbevent_browser_overlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <!-- Include the javascript code -->
+  <script type="application/x-javascript" src="chrome://cbevent/content/browser.js" />
+  <!--<script type="application/x-javascript" src="chrome://cbevent/content/jquery-1.9.1.js"/>-->
+
+  <!-- Init only if this is an actual browser window (not prefs or something) -->
+  <window id="main-window">
+    <script type="application/x-javascript">
+	window.addEventListener("load", cbevent_init, false);
+    </script>
+  </window>
+
+</overlay>
+

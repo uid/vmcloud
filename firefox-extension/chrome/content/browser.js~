@@ -1,0 +1,21 @@
+var cbeventExtension = {
+	init: function() {
+		var appcontent = document.getElementById("appcontent");
+		if (appcontent) {
+			appcontent.addEventListener("DOMContentLoaded", cbeventExtension.onPageLoad, true);
+		}
+	},
+	
+	onPageLoad: function(event) {
+		var doc = event.originalTarget;
+		alert(doc.location);
+	}
+};
+
+
+
+
+function cbevent_init() {
+	window.removeEventListener("load", cbevent_init, false);
+	cbeventExtension.init();
+}

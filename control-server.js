@@ -1,25 +1,32 @@
+var config = require('./config.js');
 var rpc = require('./rpc.js');
-var common = require('./cbvms_common.js');
+var common = require('./common.js');
 var error = common.error;
 var log = common.log;
 var vlog = common.vlog;
+var dlog = common.dlog;
 
-// for now just keep an in-memory list; DB in the future.
-var vm_instances = [];
-var next_vm = 1;
+function runControlServer() {
+	var rpc_server = new rpc({
+		checkin: function (vmid, callback) {
+			// TODO: do stuff
+			vlog("Checkin received from: " + vmid);
+			callback();
+		},
+		browser_event: function (vmid, data, callback) {
+			vlog("Browser event received: " + JSON.stringify(data));
+			callback();
+		},
+		log: function(vmid, msg, callback) {
+			dlog("Remote log ["+vmid+"]: "+msg);
+			callback();
+		}
+	});
 
-var rpc_server = new rpc({
-    checkin: function(data, callback) { //todo: what data?
-        vm_instances.push(next_vm);
-        callback(next_vm);
-        vlog("Checkin received: "+data+", assigned vm_id = "+next_vm);
-        next_vm++;
-    },
-    browser_event: function(data, callback) {
-        vlog("Browser event received: "+JSON.stringify(data));
-        callback();
-    }
-});
 
+	rpc_server.listen(config.control.port);
+	log("Server running on port "+config.control.port);
 
-rpc_server.listen(9090);
+}
+
+exports = module.exports = runControlServer;

@@ -248,7 +248,7 @@ function getOpenStackController(bigCallback) {
 
 					var lines = [
 						'#!/bin/sh',
-						'cat ' + escapedJSON + ' > ' + config.general.boot_json_file,
+						'echo ' + escapedJSON + ' > ' + config.general.boot_json_file,
 						'node ' + config.vm.deploy_dir + '/bootstrap.js'
 					];
 					return lines.join('\n');

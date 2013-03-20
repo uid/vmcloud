@@ -1,12 +1,18 @@
 var request = require('request');
 var config = require('./config.js');
+var _ = require('underscore');
+var async = require('async');
 
-var v20url = "http://" + config.openstack.server + ":5000/v2.0";
-var v2url = "http://" + config.openstack.server + ":8774/v2";
+var auth_url = "http://" + config.openstack.server + ":5000/v2.0";
+var nova_url = "http://" + config.openstack.server + ":8774/v2";
+
+exports = module.exports = {
+	getOpenStackController : getOpenStackController
+};
 
 function getAuthToken(user, pass, callback) {
 	request({
-			url: v20url + "/tokens",
+			url: auth_url + "/tokens",
 			method: 'POST',
 			headers: {
 				'Content-type': 'application/json'
@@ -30,7 +36,7 @@ function getAuthToken(user, pass, callback) {
 
 function getTenants(authToken, callback) {
 	request({
-		url: v20url + "/tenants",
+		url: auth_url + "/tenants",
 		headers: {
 			'X-Auth-Token': authToken
 		},
@@ -51,7 +57,7 @@ function V2Client(arg_tenant_id, arg_authToken) {
 
 	this.getV2JSON = function (where, callback) {
 		request({
-			url: v2url + "/" + this.tenant_id + "/" + where,
+			url: nova_url + "/" + this.tenant_id + "/" + where,
 			headers: {
 				'X-Auth-Token': this.authToken
 			},
@@ -63,7 +69,7 @@ function V2Client(arg_tenant_id, arg_authToken) {
 
 	this.getInfo = function (callback) {
 		request({
-			url: v2url,
+			url: nova_url,
 			headers: {
 				'X-Auth-Token': this.authToken
 			},
@@ -116,7 +122,7 @@ function V2Client(arg_tenant_id, arg_authToken) {
 
 	this.addFloatingIP = function (server_id, ip, callback) {
 		request({
-			url: v2url + "/" + this.tenant_id + "/servers/" + server_id + "/action",
+			url: nova_url + "/" + this.tenant_id + "/servers/" + server_id + "/action",
 			method: "POST",
 			headers: {
 				'X-Auth-Token': this.authToken,
@@ -135,7 +141,7 @@ function V2Client(arg_tenant_id, arg_authToken) {
 
 	this.boot = function (params, callback) {
 		request({
-			url: v2url + "/" + this.tenant_id + "/servers",
+			url: nova_url + "/" + this.tenant_id + "/servers",
 			method: "POST",
 			headers: {
 				'X-Auth-Token': this.authToken,
@@ -147,21 +153,20 @@ function V2Client(arg_tenant_id, arg_authToken) {
 		}, function (e, r, body) {
 			callback(JSON.parse(body).server);
 		});
-	}
-}
+	};
 
-function idOf(array, key, criteria) {
-	for (var i = 0; i < array.length; i++) {
-		if (key in array[i] && criteria(array[i][key])) {
-			return array[i].id;
-		}
-	}
-}
-
-function EQ(val) {
-	return function (a) {
-		return a == val;
-	}
+	this.shutdown = function(id, callback) {
+		request({
+			url: nova_url + "/" + this.tenant_id + "/servers/" + id,
+			method: "DELETE",
+			headers: {
+				'X-Auth-Token': this.authToken,
+				'Content-type' : 'application/json'
+			}
+		}, function(e, r, body) {
+			callback();
+		});
+	};
 }
 
 function sync(num, func, after) {
@@ -175,68 +180,105 @@ function sync(num, func, after) {
 	func(done);
 }
 
-//test
-getAuthToken(config.openstack.user, config.openstack.pass, function (authToken) {
-	//console.log(id);
-	getTenants(authToken, function (tenants) {
-		var tenant_id = tenants[0].id;
-		var client = new V2Client(tenant_id, authToken);
 
-		var images, flavors, keypairs, sgroups, servers, ips;
-		sync(6, function (done) {
-			client.getImages(function (r) {
-				images = r;
-				done();
+function getOpenStackController(bigCallback) {
+	async.waterfall([
+		// get auth token
+		function (callback) {
+			getAuthToken(config.openstack.user, config.openstack.pass, function (authToken) {
+				callback(null, authToken);
 			});
-			client.getFlavors(function (r) {
-				flavors = r;
-				done();
-			});
-			client.getKeyPairs(function (r) {
-				keypairs = r;
-				done();
-			});
-			client.getSecurityGroups(function (r) {
-				sgroups = r;
-				done();
-			});
-			client.getServers(function (r) {
-				servers = r;
-				done();
-			});
-			client.getFloatingIPs(function (r) {
-				ips = r;
-				done();
-			})
-		}, function () {
-			var imageId = idOf(images, "name", EQ("Ubuntu 12.04LTS cloudimg amd64"));
-			var flavorId = idOf(flavors, "name", EQ("m1.tiny"));
-			var keypairId = "robin";
-			var sgroupId = idOf(sgroups, "name", EQ("robin"));
-			var ip = ips[0].ip;
-			console.log({
-				image: imageId, flavor: flavorId, key: keypairId, sgroup: sgroupId
-			});
-			/*client.getServer('3e3e6ab2-612a-4f9f-b71b-e80227dda653', function(json) {
-			 console.log(json);
-			 });*/
+		},
 
-			client.boot({
-				security_group: "robin",
-				imageRef: imageId,
-				flavorRef: flavorId,
-				name: "robin-test-server-created-with-api",
-				key_name: keypairId
-			}, function (json) {
-				console.log(json);
-				// Find some way to get around this!
-				setTimeout(function () {
-					client.addFloatingIP(json.id, ip, function () {
-						console.log("floating IP added");
+		// get tenant ID
+		function (authToken, callback) {
+			getTenants(authToken, function (tenants) {
+				callback(null, authToken, tenants[0].id);
+			});
+		},
+
+		// get launch params
+		function (authToken, tenantId, callback) {
+			var client = new V2Client(tenantId, authToken);
+			var images, flavors, keypairs, sgroups, servers, ips;
+			async.parallel([function (done) {
+				client.getImages(function (r) {
+					images = r;
+					done();
+				});
+			}, function (done) {
+				client.getFlavors(function (r) {
+					flavors = r;
+					done();
+				});
+			}, function (done) {
+				client.getKeyPairs(function (r) {
+					keypairs = r;
+					done();
+				});
+			}, function (done) {
+				client.getSecurityGroups(function (r) {
+					sgroups = r;
+					done();
+				});
+			}, function (done) {
+				client.getServers(function (r) {
+					servers = r;
+					done();
+				});
+			}], function () {
+				var imageId = _.findWhere(images, {name: config.openstack.image_name}).id;
+				var flavorId = _.findWhere(flavors, {name: config.openstack.flavor_name}).id;
+				var keypairId = config.openstack.keypair;
+				var sgroupId = _.findWhere(sgroups, {name: config.openstack.security_group}).id;
+				var prefix = config.openstack.instance_name_prefix;
+
+				console.log("Launching parameters:");
+				console.log({
+					image: imageId, flavor: flavorId, key: keypairId, sgroup: sgroupId
+				});
+
+				function getStartupScript(vmid) {
+					var startupJSON = JSON.stringify({
+						isControl: false,
+						vmid: vmid
 					});
-				}, 5000);
-			});
-		});
-	});
-});
 
+					var escapedJSON = JSON.stringify(startupJSON); // TODO: fishy way to escape things..
+
+					var lines = [
+						'#!/bin/sh',
+						'cat ' + escapedJSON + ' > ' + config.general.boot_json_file,
+						'node ' + config.vm.deploy_dir + '/bootstrap.js'
+					];
+					return lines.join('\n');
+				}
+
+				bigCallback({
+					client: client, // for debugging purposes
+					boot: function (vmid, callback) {
+						client.boot({
+							name: prefix + vmid,
+							imageRef: imageId,
+							flavorRef: flavorId,
+							key_name: keypairId,
+							security_group: sgroupId,
+							user_data: new Buffer(getStartupScript(vmid)).toString('base64')
+						}, function (json) {
+							callback(json.id); // TODO: what if booting fails?
+						});
+					},
+					kill: function (id, callback) {
+						client.shutdown(id, function (json) {
+							callback(); // TODO: what if shutdown fails?
+						});
+					}
+				});
+
+			});
+			callback(null);
+		}
+
+	]);
+
+}

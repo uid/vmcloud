@@ -17,7 +17,6 @@ var VMStates = {
 	BUSY: 1,
 	FREE: 2,
 	READY: 3,
-	OCCUPIED: 4,
 	ERROR: -1
 };
 
@@ -102,14 +101,6 @@ function runRpcServer() {
 					state: vmState
 				});
 			}); // TODO: revisit
-		},
-
-		serve: function(data, callback) {
-			// no idea what to do yet.
-			vmState = VMStates.OCCUPIED;
-			callback({
-				state: vmState
-			});
 		},
 
 		cleanup: function(data, callback) {

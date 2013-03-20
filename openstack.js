@@ -230,7 +230,7 @@ function getOpenStackController(bigCallback) {
 				var imageId = _.findWhere(images, {name: config.openstack.image_name}).id;
 				var flavorId = _.findWhere(flavors, {name: config.openstack.flavor_name}).id;
 				var keypairId = config.openstack.keypair;
-				var sgroupId = config.openstack.security_group1;
+				var sgroupId = config.openstack.security_group;
 				var prefix = config.openstack.instance_name_prefix;
 
 				console.log("Launching parameters:");

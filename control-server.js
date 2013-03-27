@@ -21,17 +21,18 @@ var openstackController = null;
 function bootNewVM() {
 	var vmid = nextVMID;
 	nextVMID++;
-	vmData[vmid] = {state: BeliefState.BOOTING};
+	vmData[vmid] = {state: BeliefState.WAIT}; // TODO: possible issues?
 	openstackController.boot(vmid, function (server) {
 		vmData[vmid].server = server;
+		vmData[vmid].state = BeliefState.BOOTING;
 		log("Successfully booted: " + vmid + ", OpenStack instance id = " + server.id);
 	});
 }
 
 function killVM(vmid) {
-	var id = vmData[vmid].id;
+	var id = vmData[vmid].server.id;
 	if (!id) {
-		log("Error: VM " + vmid + " not ready!");
+		log("Error when killing VM: VM " + vmid + " not ready!");
 		return;
 	}
 	vmData[vmid].state = BeliefState.WAIT;
@@ -70,7 +71,7 @@ function getVMMaintainer() {
 			}, 5000);
 		},
 		setNumVMs: function (num) {
-			numVMs = num;
+			numVMs = parseInt(num);
 		},
 		getNumVMs: function () {
 			return numVMs;

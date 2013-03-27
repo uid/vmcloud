@@ -31,6 +31,7 @@ function log(msg) {
 		// TODO: log to file!
 		console.log(logmsg);
 	} else {
+		console.log(logmsg);
 		rpc.connect(config.control.port, config.control.host, function (remote, conn) {
 			remote.log(config.boot.vmid, logmsg, function () {
 				conn.destroy();
@@ -52,9 +53,30 @@ function vlog(msg) {
 	console.log("Log [" + file + ":" + line + "]: " + msg);
 }
 
+
+var VMStates = {
+	BUSY: 1,
+	FREE: 2,
+	READY: 3,
+	ERROR: -1
+};
+
+
+var BeliefState = {
+	BOOTING : 1,
+	WAIT : 2,
+	FREE : 3,
+	READY : 4,
+	OCCUPIED: 5,
+	ERROR: -1
+};
+
+
 exports = module.exports = {
 	error: error,
 	log: log,
 	vlog: vlog,
-	dlog: dlog
+	dlog: dlog,
+	VMStates : VMStates,
+	BeliefState : BeliefState
 };

@@ -41,6 +41,12 @@ var config = {
 		// File in which the initial boot config json should be stored
 		// This path MUST be ABSOLUTE
 		boot_json_file: '/opt/vmcloud.json'
+	},
+
+	// configuration parameters for the external application; in our case, FlightCrew apps
+	external: {
+		rtsp_publish_port: 5555,
+		audio_sink_name: 'vmcapture'
 	}
 };
 
@@ -59,5 +65,6 @@ module.exports = exports = {
 	openstack: config.openstack,
 	control: config.control,
 	vm: config.vm,
-	general: config.general
+	general: config.general,
+	external: config.external
 };

@@ -12,13 +12,7 @@ var ctrl_server = config.control.host;
 var ctrl_port = config.control.port;
 var vmid = config.boot.vmid;
 
-
-var VMStates = {
-	BUSY: 1,
-	FREE: 2,
-	READY: 3,
-	ERROR: -1
-};
+var VMStates = common.VMStates;
 
 var vmState = VMStates.BUSY;
 
@@ -80,6 +74,10 @@ function vmCheckIn(callback) {
 	})
 }
 
+// TODO: This is just to be simple. But if we want to ultimately support multiple instances per VM, this needs to be
+// changed somehow.
+var sessionPayload;
+
 function runRpcServer() {
 	var rpc_server = new rpc({
 		ping: function (callback) {
@@ -90,27 +88,29 @@ function runRpcServer() {
 
 		prepare: function(data, callback) {
 			vmState = VMStates.BUSY;
-			vmActions.prepare(data, function(result) {
-				if (result.success) {
-					vmState = VMStates.READY;
+			vmActions.prepare(data, function(err, result) {
+				if (err) {
+					vmState = VMStates.ERROR
 				} else {
-					vmState = VMStates.ERROR;
+					vmState = VMStates.READY;
+					sessionPayload = result;
 				}
 				callback({
 					result: result,
 					state: vmState
 				});
-			}); // TODO: revisit
+			});
 		},
 
 		cleanup: function(data, callback) {
-			// no idea what to do either.
 			vmState = VMStates.BUSY;
-			vmActions.cleanup(data, function(result) {
-				if (result.success) {
-					vmState = VMStates.FREE;
-				} else {
+			vmActions.cleanup({
+				payload: sessionPayload
+			}, function(err, result) {
+				if (err) {
 					vmState = VMStates.ERROR;
+				} else {
+					vmState = VMStates.FREE;
 				}
 				callback({
 					result: result,
@@ -118,15 +118,24 @@ function runRpcServer() {
 				});
 			});
 		}
+		// TODO: add debug commands such as enter error state
 	});
 	rpc_server.listen(config.vm.interface_port);
 }
 
 function runVMInterface() {
-	runRpcServer();
-	runFirefoxPluginListenerServer();
-	vmCheckIn(function() {
-		vmState = VMStates.FREE;
+	vmActions.initial_bootup(function(err, result) {
+		if (err) {
+			log("Initial bootup failed.");
+			vmState = VMStates.ERROR;
+			vmCheckIn(function(){});
+		} else {
+			runRpcServer();
+			runFirefoxPluginListenerServer();
+			vmCheckIn(function() {
+				vmState = VMStates.FREE;
+			});
+		}
 	});
 }
 

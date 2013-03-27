@@ -23,7 +23,7 @@ function getAuthToken(user, pass, callback) {
 						username: user,
 						password: pass
 					},
-					tenantName: "mario"
+					tenantName: config.openstack.tenant
 				}
 			})
 		}, function (e, r, body) {
@@ -265,7 +265,7 @@ function getOpenStackController(bigCallback) {
 							security_group: sgroupId,
 							user_data: new Buffer(getStartupScript(vmid)).toString('base64')
 						}, function (json) {
-							callback(json.id); // TODO: what if booting fails?
+							callback(json); // TODO: what if booting fails?
 						});
 					},
 					kill: function (id, callback) {

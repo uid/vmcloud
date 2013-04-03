@@ -1,4 +1,3 @@
-// Copy to config.js and edit the following parameters.
 var config = {
 	// Open stack configurations
 	openstack: {
@@ -6,7 +5,7 @@ var config = {
 		user: 'openstackuser',
 		pass: 'openstackpassword',
 
-		// server IP
+		// OpenStack server IP
 		server: '123.123.123.123',
 
 		// the tenant name
@@ -32,14 +31,16 @@ var config = {
 		firefox_port: 9091,    // port for Firefox plugin calls
 		interface_port: 9092,   // port for control server calls
 
-		// directory which bootstrap.js is located when a VM boots (no trailing slash)
+		// directory which bootstrap-vm.js is located when a VM boots (no trailing slash)
 		// MUST be ABSOLUTE
+		// DO NOT CHANGE: Changing is not supported at the moment
 		deploy_dir: '/var/vmcloud'
 	},
 
 	general: {
 		// File in which the initial boot config json should be stored
 		// This path MUST be ABSOLUTE
+		// DO NOT CHANGE: Changing is not supported at the moment
 		boot_json_file: '/opt/vmcloud.json'
 	},
 
@@ -54,17 +55,19 @@ var config = {
 //////////////////////////////////////////////////////////
 // Do not edit from this point below
 //////////////////////////////////////////////////////////
-
-var boot_config = require(config.general.boot_json_file);
-
 module.exports = exports = {
-	boot: {
-		isControl: boot_config.isControl,
-		vmid: boot_config.vmid
-	},
+	isControl: null,
+	vmid: null,
 	openstack: config.openstack,
 	control: config.control,
 	vm: config.vm,
 	general: config.general,
-	external: config.external
+	external: config.external,
+	i_am_control: function() {
+		this.isControl = true;
+	},
+	i_am_instance: function(vmid) {
+		this.isControl = false;
+		this.vmid = vmid;
+	}
 };

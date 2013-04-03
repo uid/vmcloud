@@ -7,6 +7,7 @@ var vlog = common.vlog;
 var dlog = common.dlog;
 var openstack = require('./openstack.js');
 var express = require('express');
+var fs = require('fs');
 
 var vmData = {}; // TODO: put in database
 var nextVMID = 1;
@@ -123,6 +124,17 @@ function runControlServer() {
 		log: function (vmid, msg, callback) {
 			dlog("Remote log [" + vmid + "]: " + msg);
 			callback();
+		},
+		getConfig: function(vmid, callback) {
+			vlog("VM #" + vmid + " fetching config.");
+			fs.readFile('config.js', function(err, data) {
+				if (err) {
+					log("Cannot fetch config file.");
+					callback('');
+				} else {
+					callback(data);
+				}
+			});
 		}
 	});
 

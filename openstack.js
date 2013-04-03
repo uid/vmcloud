@@ -240,16 +240,16 @@ function getOpenStackController(bigCallback) {
 
 				function getStartupScript(vmid) {
 					var startupJSON = JSON.stringify({
-						isControl: false,
-						vmid: vmid
+						vmid: vmid,
+						control_server: config.control.host,
+						control_port: config.control.port
 					});
 
 					var escapedJSON = JSON.stringify(startupJSON); // TODO: fishy way to escape things..
 
 					var lines = [
 						'#!/bin/sh',
-						'echo ' + escapedJSON + ' > ' + config.general.boot_json_file,
-						'node ' + config.vm.deploy_dir + '/bootstrap.js'
+						'echo ' + escapedJSON + ' > ' + config.general.boot_json_file
 					];
 					return lines.join('\n');
 				}

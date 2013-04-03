@@ -10,7 +10,7 @@ var vmActions = require('./vm-actions.js');
 
 var ctrl_server = config.control.host;
 var ctrl_port = config.control.port;
-var vmid = config.boot.vmid;
+var vmid = config.vmid;
 
 var VMStates = common.VMStates;
 

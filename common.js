@@ -27,13 +27,13 @@ function log(msg) {
 	var line = frame.getLineNumber();
 	var file = frame.getFileName();
 	var logmsg = "Log [" + file + ":" + line + "]: " + msg;
-	if (config.boot.isControl) {
+	if (config.isControl) {
 		// TODO: log to file!
 		console.log(logmsg);
 	} else {
 		console.log(logmsg);
 		rpc.connect(config.control.port, config.control.host, function (remote, conn) {
-			remote.log(config.boot.vmid, logmsg, function () {
+			remote.log(config.vmid, logmsg, function () {
 				conn.destroy();
 				conn.end();
 			})

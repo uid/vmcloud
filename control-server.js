@@ -152,6 +152,56 @@ function runControlServer() {
 		res.send("");
 	});
 
+    app.get('/prepare/:vmid/:url', function(req, res) {
+        log('Received web request to set up a firefox session pointing to home page '
+            + req.params.url + ' on VM #' + req.params.vmid);
+        var vmid = parseInt(req.params.vmid);
+        if (vmid in vmData) {
+            var state = vmData[vmid].state; // TODO: state versioning
+            if (state == BeliefState.FREE) {
+                vmData[vmid].state = BeliefState.WAIT;
+                vmrpc(vmid, function(remote, cb) {
+                    remote.prepare({
+                        profile_name : 'vmprofile',
+                        home_page: req.params.url
+                    }, cb);
+                }, function(err, result) {
+                    if (err) {
+                        log("Error while preparing VM: " + err);
+                    } else {
+                        vmData[vmid].state = result.state; // TODO: state versioning
+                    }
+                });
+            } else {
+                log("VM not in the correct state! State is " + BeliefState.name(state));
+            }
+        }
+        res.send('');
+    });
+
+    app.get('/cleanup/:vmid', function(req, res) {
+        log('Received web request to tear down the firefox session on VM #'+req.params.vmid);
+        var vmid = parseInt(req.params.vmid);
+        if (vmid in vmData) {
+            var state = vmData[vmid].state;
+            if (state == BeliefState.READY || state == BeliefState.OCCUPIED) {
+                vmData[vmid].state = BeliefState.WAIT;
+                vmrpc(vmid, function(remote, cb) {
+                    remote.cleanup({}, cb);
+                }, function(err, result) {
+                    if (err) {
+                        log("Error while cleaning up VM: " + err);
+                    } else {
+                        vmData[vmid].state = result.state; // TODO: state versioning
+                    }
+                });
+            } else {
+                log("VM not in the correct state! State is " + BeliefState.name(state));
+            }
+        }
+        res.send('');
+    });
+
 
 	log("Authenticating into OpenStack and getting parameters...");
 	// prepare openstack
@@ -169,7 +219,7 @@ function runControlServer() {
 		log("Heartbeater started.");
 
 		app.listen(config.control.external_port);
-		log("External web server started.");
+		log("External web server started on port " + config.control.external_port);
 	});
 }
 
@@ -188,10 +238,10 @@ function vmrpc(vmid, action, callback) {
 
 	var ip = vmData[vmid].server.ip;
 	rpc.connect(port, ip, function (remote, conn) {
-		action(remote, function (result) {
+		action(remote, function () {
 			conn.destroy();
 			conn.end();
-			callback(null, result);
+            callback.apply(null, [null].concat(arguments));
 		});
 	});
 }

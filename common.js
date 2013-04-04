@@ -68,7 +68,10 @@ var BeliefState = {
 	FREE : 3,
 	READY : 4,
 	OCCUPIED: 5,
-	ERROR: -1
+	ERROR: 6,
+    name: function(val) {
+        return ['', 'BOOTING', 'WAIT', 'FREE', 'READY', 'OCCUPIED', 'ERROR'][val];
+    }
 };
 
 

@@ -53,7 +53,7 @@ function V2Client(arg_tenant_id, arg_authToken) {
 	if (!(this instanceof V2Client)) return new V2Client(tenant_id, authToken);
 
 	this.tenant_id = arg_tenant_id;
-	this.authToken = arg_authToken;
+	this.authToken = arg_authToken; // TODO: need to renew token periodically; resets a certain time of day
 
 	this.getV2JSON = function (where, callback) {
 		request({

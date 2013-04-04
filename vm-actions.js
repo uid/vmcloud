@@ -51,6 +51,7 @@ function redirectAudio(sink_name, callback) {
 	log("Setting up audio redirection with sink "+sink_name);
 	async.series([
 		function (cb) {
+			log("loading null sink module");
 			var proc = spawn('pactl', ['load-module', 'module-null-sink',
 				'sink_name=' + sink_name]);
 			proc.on('close', function (code) {
@@ -62,6 +63,7 @@ function redirectAudio(sink_name, callback) {
 			});
 		},
 		function (cb) {
+			log("setting default sink");
 			var proc = spawn('pacmd', ['set-default-sink', sink_name]);
 			proc.on('close', function (code) {
 				if (code == 0) {

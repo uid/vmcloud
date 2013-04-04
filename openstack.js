@@ -249,7 +249,8 @@ function getOpenStackController(bigCallback) {
 
 					var lines = [
 						'#!/bin/sh',
-						'echo ' + escapedJSON + ' > ' + config.general.boot_json_file
+						'echo ' + escapedJSON + ' > ' + config.general.boot_json_file,
+						'chmod 777 ' + config.general.boot_json_file
 					];
 					return lines.join('\n');
 				}

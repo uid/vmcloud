@@ -5,8 +5,8 @@ var fs = require('fs');
 process.chdir(__dirname);
 
 // update from git
-exec('git fetch --all; git reset --hard origin/master').on('close', function(code, signal) {
-	if (code != 0) {
+exec('git fetch --all; git reset --hard origin/master', function(error, stdout, stderr) {
+	if (error !== null) {
 		console.log("[vmcloud] Warning: Cannot update from git repository");
 	}
 
@@ -31,16 +31,9 @@ exec('git fetch --all; git reset --hard origin/master').on('close', function(cod
 			});
 			conn.destroy();
 			conn.end();
-			callback();
 		})
 	})
 });
-
-
-function bootstrap_control_server() {
-	var control_server = require('./control-server.js');
-	control_server();
-}
 
 function bootstrap_vm_instance() {
 	var vm_interface = require('./vm-interface.js');

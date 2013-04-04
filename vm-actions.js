@@ -20,7 +20,7 @@ var log = common.log;
 function createFirefoxProfile(profile_name, callback) {
 	log("Creating firefox profile "+profile_name);
 	var proc = spawn('firefox', ['-CreateProfile', profile_name, '-new-instance']);
-	proc.on('close', function (code) {
+	proc.on('exit', function (code) {
 		if (code == 0) {
 			callback(null);
 		} else {
@@ -54,7 +54,7 @@ function redirectAudio(sink_name, callback) {
 			log("loading null sink module");
 			var proc = spawn('pactl', ['load-module', 'module-null-sink',
 				'sink_name=' + sink_name]);
-			proc.on('close', function (code) {
+			proc.on('exit', function (code) {
 				if (code == 0) {
 					cb(null, null);
 				} else {
@@ -65,7 +65,7 @@ function redirectAudio(sink_name, callback) {
 		function (cb) {
 			log("setting default sink");
 			var proc = spawn('pacmd', ['set-default-sink', sink_name]);
-			proc.on('close', function (code) {
+			proc.on('exit', function (code) {
 				if (code == 0) {
 					cb(null, null);
 				} else {
@@ -162,7 +162,7 @@ function setupSession(profile_name, home_page, callback) {
  */
 function teardownSession(process, callback) {
 	log("Terminating session "+process);
-	process.on('close', function(code, signal) {
+	process.on('exit', function(code, signal) {
 		callback(null); // TODO: when would an error happen?
 	});
 	process.kill();

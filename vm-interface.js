@@ -96,7 +96,7 @@ function runRpcServer() {
 					sessionPayload = result;
 				}
 				callback({
-					result: result,
+					pid: result.process.pid,
 					state: vmState
 				});
 			});

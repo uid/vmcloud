@@ -208,6 +208,7 @@ function runControlServer() {
 
     var maintainer = getVMMaintainer();
     var heartbeater = getVMHeartbeater();
+    var watchdog = getVMWatchdog();
 
     var app = express();
     app.get('/set-num-vm/:num', function (req, res) {
@@ -285,6 +286,9 @@ function runControlServer() {
 
         heartbeater.run();
         log("Heartbeater started.");
+
+        watchdog.run();
+        log("Watchdog started.");
 
         app.listen(config.control.external_port);
         log("External web server started on port " + config.control.external_port);

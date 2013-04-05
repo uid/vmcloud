@@ -184,7 +184,7 @@ function updateInstanceInfoFromOpenStack(vmid, destState) {
     var vm = vmData[vmid];
     var ver = vm.state.set(BeliefState.WAIT);
     openstackController.getServer(vm.server.id, function (server) {
-        vlog("VM #" + vmid + " info updated: " + server);
+        vlog("VM #" + vmid + " info updated: " + JSON.stringify(server));
         vm.server = server;
         vm.state.verSet(ver, destState);
     });

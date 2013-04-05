@@ -120,6 +120,7 @@ function getVMHeartbeater() {
                             vmrpc(vmid, function (remote, cb) {
                                 remote.ping(cb);
                             }, function (err, result) {
+                                var vmState = result.state;
                                 var state = vm.state.get();
                                 if (err) {
                                     log('Pinging VM ' + vmid + ' failed: ' + err);
@@ -127,16 +128,16 @@ function getVMHeartbeater() {
                                 } else if (state == BeliefState.WAIT) {
                                     // do nothing
                                 } else if (state == BeliefState.FREE) {
-                                    if (result != VMStates.FREE) {
-                                        log('VM ' + vmid + " is " + VMStates.name(result)
+                                    if (vmState != VMStates.FREE) {
+                                        log('VM ' + vmid + " is " + VMStates.name(vmState)
                                             + " but belief state is FREE!");
                                         vm.state.set(BeliefState.ERROR);
                                     } else {
                                         vm.state.set(BeliefState.FREE); // refresh it
                                     }
                                 } else if (state == BeliefState.READY || state == BeliefState.OCCUPIED) {
-                                    if (result != VMStates.READY) {
-                                        log('VM ' + vmid + ' is ' + VMStates.name(result)
+                                    if (vmState != VMStates.READY) {
+                                        log('VM ' + vmid + ' is ' + VMStates.name(vmState)
                                             + ' but belief state is ' + BeliefState.name(state) + "!");
                                     } else {
                                         vm.state.set(state);

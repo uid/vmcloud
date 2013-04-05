@@ -134,7 +134,6 @@ function V2Client(arg_tenant_id, arg_authToken) {
 				}
 			})
 		}, function (e, r, body) {
-			console.log(body);
 			callback();
 		});
 	};
@@ -151,6 +150,7 @@ function V2Client(arg_tenant_id, arg_authToken) {
 				server: params
 			})
 		}, function (e, r, body) {
+            console.log(body);
 			callback(JSON.parse(body).server);
 		});
 	};
@@ -218,6 +218,7 @@ function getOpenStackController(bigCallback) {
 				});
 			}, function (done) {
 				client.getSecurityGroups(function (r) {
+                    console.log(r);
 					sgroups = r;
 					done();
 				});
@@ -263,7 +264,7 @@ function getOpenStackController(bigCallback) {
 							imageRef: imageId,
 							flavorRef: flavorId,
 							key_name: keypairId,
-							security_group: sgroupId,
+							security_group: sgroupId, // TODO: doesn't work!
 							user_data: new Buffer(getStartupScript(vmid)).toString('base64')
 						}, function (json) {
 							callback(json); // TODO: what if booting fails?

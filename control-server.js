@@ -51,7 +51,8 @@ function bootNewVM() {
     openstackController.boot(vmid, function (server) {
         vmData[vmid].server = server;
         vmData[vmid].state.verSet(0, BeliefState.BOOTING);
-        log("Successfully booted: " + vmid + ", OpenStack instance id = " + server.id);
+        log("Successfully booted: " + vmid + ", OpenStack instance id = " + server.id
+            + ", server info: " + JSON.stringify(server));
     });
 }
 

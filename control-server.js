@@ -327,10 +327,10 @@ function vmrpc(vmid, action, callback) {
     var ip = vmData[vmid].server.addresses.private[0].addr; // TODO: multiple addresses possible?
     rpc.connect(port, ip, function (remote, conn) {
         action(remote, function () {
-            console.log(arguments);
+            var args = Array.prototype.slice.call(arguments);
             conn.destroy();
             conn.end();
-            callback.apply(null, [null].concat(arguments));
+            callback.apply(null, [null].concat(args));
         });
     });
 }

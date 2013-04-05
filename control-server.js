@@ -120,6 +120,7 @@ function getVMHeartbeater() {
                             vmrpc(vmid, function (remote, cb) {
                                 remote.ping(cb);
                             }, function (err, result) {
+                                console.log(result);
                                 var vmState = result.state;
                                 var state = vm.state.get();
                                 if (err) {
@@ -326,6 +327,7 @@ function vmrpc(vmid, action, callback) {
     var ip = vmData[vmid].server.addresses.private[0].addr; // TODO: multiple addresses possible?
     rpc.connect(port, ip, function (remote, conn) {
         action(remote, function () {
+            console.log(arguments);
             conn.destroy();
             conn.end();
             callback.apply(null, [null].concat(arguments));

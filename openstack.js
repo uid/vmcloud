@@ -150,7 +150,6 @@ function V2Client(arg_tenant_id, arg_authToken) {
 				server: params
 			})
 		}, function (e, r, body) {
-            console.log(body);
 			callback(JSON.parse(body).server);
 		});
 	};
@@ -218,7 +217,6 @@ function getOpenStackController(bigCallback) {
 				});
 			}, function (done) {
 				client.getSecurityGroups(function (r) {
-                    console.log(r);
 					sgroups = r;
 					done();
 				});

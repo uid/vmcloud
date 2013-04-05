@@ -151,11 +151,11 @@ function getVMHeartbeater() {
 
 function getVMWatchdog() {
     return {
-        run: function() {
+        run: function () {
             var knowledge = {};
             setInterval(function watchdog() {
                 var time = new Date().getTime();
-                for(var vmid in vmData) {
+                for (var vmid in vmData) {
                     var vm = vmData[vmid];
                     var state = vm.state.get();
                     var ver = vm.state.getVer();
@@ -179,11 +179,22 @@ function getVMWatchdog() {
     }
 }
 
+// Refresh the server info from openstack, and then transition into the given state
+function updateInstanceInfoFromOpenStack(vmid, destState) {
+    var vm = vmData[vmid];
+    var ver = vm.state.set(BeliefState.WAIT);
+    openstackController.getServer(vm.server.id, function (server) {
+        vlog("VM #" + vmid + " info updated: " + server);
+        vm.server = server;
+        vm.state.verSet(ver, destState);
+    });
+}
+
 function runControlServer() {
     var rpc_server = new rpc({
         checkin: function (vmid, callback) {
             vlog("Checkin received from: " + vmid);
-            vmData[vmid].state.set(BeliefState.FREE);
+            updateInstanceInfoFromOpenStack(vmid, BeliefState.FREE);
             callback();
         },
         browser_event: function (vmid, data, callback) {

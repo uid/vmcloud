@@ -264,7 +264,7 @@ function getOpenStackController(bigCallback) {
 							imageRef: imageId,
 							flavorRef: flavorId,
 							key_name: keypairId,
-							security_group: sgroupId, // TODO: doesn't work!
+							security_groups: [{name: sgroupId}],
 							user_data: new Buffer(getStartupScript(vmid)).toString('base64')
 						}, function (json) {
 							callback(json); // TODO: what if booting fails?
@@ -274,7 +274,12 @@ function getOpenStackController(bigCallback) {
 						client.shutdown(id, function (json) {
 							callback(); // TODO: what if shutdown fails?
 						});
-					}
+					},
+                    getServer: function(id, callback) {
+                        client.getServer(id, function(json) {
+                            callback(json);
+                        });
+                    }
 				});
 
 			});

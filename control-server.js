@@ -268,7 +268,7 @@ function runControlServer() {
  * @param callback called with (null, result) if success, or (err) if error
  */
 function vmrpc(vmid, action, callback) {
-    var port = config.vm.port;
+    var port = config.vm.interface_port;
     if (!('server' in vmData[vmid])) {
         callback("VM " + vmid + " is not ready yet.");
         return;

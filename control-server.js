@@ -128,14 +128,16 @@ function getVMHeartbeater() {
                                     // do nothing
                                 } else if (state == BeliefState.FREE) {
                                     if (result != VMStates.FREE) {
-                                        log('VM ' + vmid + " is not FREE but belief state is FREE!");
+                                        log('VM ' + vmid + " is " + VMStates.name(state)
+                                            + " but belief state is FREE!");
                                         vm.state.set(BeliefState.ERROR);
                                     } else {
                                         vm.state.set(BeliefState.FREE); // refresh it
                                     }
                                 } else if (state == BeliefState.READY || state == BeliefState.OCCUPIED) {
                                     if (result != VMStates.READY) {
-                                        log('VM ' + vmid + ' is not READY but belief state is ' + BeliefState.name(state) + "!");
+                                        log('VM ' + vmid + ' is ' + VMStates.name(state)
+                                            + ' but belief state is ' + BeliefState.name(state) + "!");
                                     } else {
                                         vm.state.set(state);
                                     }

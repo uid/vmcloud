@@ -132,9 +132,8 @@ function runVMInterface() {
 		} else {
 			runRpcServer();
 			runFirefoxPluginListenerServer();
-			vmCheckIn(function() {
-				vmState = VMStates.FREE;
-			});
+            vmState = VMStates.FREE;
+			vmCheckIn(function() {});
 		}
 	});
 }

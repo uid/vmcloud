@@ -58,7 +58,10 @@ var VMStates = {
     BUSY: 1,
     FREE: 2,
     READY: 3,
-    ERROR: -1
+    ERROR: 4,
+    name: function(val) {
+        return ['', 'BUSY', 'FREE', 'READY', 'ERROR'][val];
+    }
 };
 
 

@@ -24,7 +24,10 @@ var config = {
 		host: '127.0.0.1', // IP or host name
 		port: 9090,
 
-		external_port: 8080
+		external_port: 8080,
+
+        // time (milliseconds) to kill VM if VM hasn't responded for this long
+        watchdog_timeout: 20000
 	},
 
 	vm: {

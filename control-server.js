@@ -148,6 +148,36 @@ function getVMHeartbeater() {
     };
 }
 
+function getVMWatchdog() {
+    return {
+        run: function() {
+            var knowledge = {};
+            setInterval(function watchdog() {
+                var time = new Date().getTime();
+                for(var vmid in vmData) {
+                    var vm = vmData[vmid];
+                    var state = vm.state.get();
+                    var ver = vm.state.getVer();
+                    if (!(vmid in knowledge)) {
+                        knowledge[vmid] = {
+                            lastVer: ver,
+                            time: time
+                        };
+                    }
+                    if (knowledge[vmid].lastVer != ver) {
+                        knowledge[vmid].lastVer = ver;
+                        knowledge[vmid].time = time;
+                    } else {
+                        if (time - knowledge[vmid].time > config.control.watchdog_timeout) {
+                            killVM(vmid);
+                        }
+                    }
+                }
+            }, 1000);
+        }
+    }
+}
+
 function runControlServer() {
     var rpc_server = new rpc({
         checkin: function (vmid, callback) {

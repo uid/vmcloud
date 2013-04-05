@@ -1,4 +1,6 @@
-apt-get install ubuntu-desktop nodejs ffmpeg libavcodec-extra-53 vlc flashplugin-nonfree
+sed -i "/^# deb.*multiverse/ s/^# //" /etc/apt/sources.list
+apt-get update
+apt-get install ubuntu-desktop nodejs ffmpeg libavcodec-extra-53 vlc ubuntu-restricted-extras
 
 userdel vmuser
 rm -rf /home/vmuser

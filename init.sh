@@ -10,5 +10,5 @@ rm /var/vmcloud/init.sh
 chown -R vmuser:vmuser /var/vmcloud
 
 /usr/lib/lightdm/lightdm-set-defaults --autologin vmuser
-grep session-setup-script /etc/lightdm/lightdm.conf || echo "session-setup-script=node /var/vmcloud/bootstrap-vm.js" >> /etc/lightdm/lightdm.conf
+grep session-setup-script /etc/lightdm/lightdm.conf || echo "session-setup-script=sudo -u vmuser sh /var/vmcloud/bootstrap-vm.sh" >> /etc/lightdm/lightdm.conf
 sync

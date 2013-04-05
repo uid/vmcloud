@@ -120,7 +120,6 @@ function getVMHeartbeater() {
                             vmrpc(vmid, function (remote, cb) {
                                 remote.ping(cb);
                             }, function (err, result) {
-                                console.log(result);
                                 var vmState = result.state;
                                 var state = vm.state.get();
                                 if (err) {
@@ -242,7 +241,7 @@ function runControlServer() {
             + req.params.url + ' on VM #' + req.params.vmid);
         var vmid = parseInt(req.params.vmid);
         if (vmid in vmData) {
-            var vm = vmData[vmid]; // TODO: state versioning
+            var vm = vmData[vmid];
             if (vm.state.get() == BeliefState.FREE) {
                 var ver = vm.state.set(BeliefState.WAIT);
                 vmrpc(vmid, function (remote, cb) {

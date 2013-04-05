@@ -85,7 +85,7 @@ function getVMMaintainer() {
                     // KILL!
                     var tokill = currentCount - numVMs;
                     for (var vmid in vmData) {
-                        var state = vmData[vmid].state;
+                        var state = vmData[vmid].state.get();
                         if (state == BeliefState.BOOTING || state == BeliefState.FREE) {
                             killVM(vmid);
                             tokill--;

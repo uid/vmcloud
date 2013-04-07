@@ -1,4 +1,4 @@
-var config = {
+module.exports = exports = {
 	// Open stack configurations
 	openstack: {
 		// credentials

@@ -6,20 +6,13 @@ var controlInterface = require('./rpc-interfaces.js').controlInterface;
 var fs = require('fs');
 process.chdir(__dirname);
 
-// update from git
-exec('git fetch --all; git reset --hard origin/master', function (error, stdout, stderr) {
-	if (error !== null) {
-		console.log("[vmcloud] Warning: Cannot update from git repository");
-	}
-
-	// get config file from control server
-	var ctrl_server = instance_config.control_server;
-	var ctrl_port = instance_config.control_port;
-	var vmid = instance_config.vmid;
-	var rpc = rpcBuilder.rpcInterface(ctrl_server, ctrl_port, controlInterface);
-	config.initInstance(vmid, rpc, function () {
-		bootstrap_vm_instance();
-	});
+// get config file from control server
+var ctrl_server = instance_config.control_server;
+var ctrl_port = instance_config.control_port;
+var vmid = instance_config.vmid;
+var rpc = rpcBuilder.rpcInterface(ctrl_server, ctrl_port, controlInterface);
+config.initInstance(vmid, rpc, function () {
+	bootstrap_vm_instance();
 });
 
 function bootstrap_vm_instance() {

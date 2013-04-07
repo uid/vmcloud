@@ -26,51 +26,19 @@ var config = {
 
 		external_port: 8080,
 
-        // time (milliseconds) to kill VM if VM hasn't responded for this long
-        watchdog_timeout: 20000
+		// time (milliseconds) to kill VM if VM hasn't responded for this long
+		watchdog_timeout: 20000
 	},
 
 	vm: {
 		firefox_port: 9091,    // port for Firefox plugin calls
 		interface_port: 9092,   // port for control server calls
-
-		// directory which bootstrap-vm.js is located when a VM boots (no trailing slash)
-		// MUST be ABSOLUTE
-		// DO NOT CHANGE: Changing is not supported at the moment
-		deploy_dir: '/var/vmcloud'
-	},
-
-	general: {
-		// File in which the initial boot config json should be stored
-		// This path MUST be ABSOLUTE
-		// DO NOT CHANGE: Changing is not supported at the moment
-		boot_json_file: '/opt/vmcloud.json'
 	},
 
 	// configuration parameters for the external application; in our case, FlightCrew apps
 	external: {
 		rtsp_publish_port: 5555,
-		audio_sink_name: 'vmcapture'
-	}
-};
-
-
-//////////////////////////////////////////////////////////
-// Do not edit from this point below
-//////////////////////////////////////////////////////////
-module.exports = exports = {
-	isControl: null,
-	vmid: null,
-	openstack: config.openstack,
-	control: config.control,
-	vm: config.vm,
-	general: config.general,
-	external: config.external,
-	i_am_control: function() {
-		this.isControl = true;
-	},
-	i_am_instance: function(vmid) {
-		this.isControl = false;
-		this.vmid = vmid;
+		audio_sink_name: 'vmcapture',
+		firefox_profile_dir: '/home/vmuser/firefox-profiles/',  // MUST end with slash
 	}
 };

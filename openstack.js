@@ -1,5 +1,5 @@
 var request = require('request');
-var config = require('./config.js');
+var config = require('./configurator.js');
 var _ = require('underscore');
 var async = require('async');
 
@@ -7,7 +7,7 @@ var auth_url = "http://" + config.openstack.server + ":5000/v2.0";
 var nova_url = "http://" + config.openstack.server + ":8774/v2";
 
 exports = module.exports = {
-	getOpenStackController : getOpenStackController
+	getOpenStackController: getOpenStackController
 };
 
 function getAuthToken(user, pass, callback) {
@@ -154,15 +154,15 @@ function V2Client(arg_tenant_id, arg_authToken) {
 		});
 	};
 
-	this.shutdown = function(id, callback) {
+	this.shutdown = function (id, callback) {
 		request({
 			url: nova_url + "/" + this.tenant_id + "/servers/" + id,
 			method: "DELETE",
 			headers: {
 				'X-Auth-Token': this.authToken,
-				'Content-type' : 'application/json'
+				'Content-type': 'application/json'
 			}
-		}, function(e, r, body) {
+		}, function (e, r, body) {
 			callback();
 		});
 	};
@@ -248,8 +248,8 @@ function getOpenStackController(bigCallback) {
 
 					var lines = [
 						'#!/bin/sh',
-						'echo ' + escapedJSON + ' > ' + config.general.boot_json_file,
-						'chmod 777 ' + config.general.boot_json_file
+						'echo ' + escapedJSON + ' > ' + config.boot_json_file,
+						'chmod 777 ' + config.boot_json_file
 					];
 					return lines.join('\n');
 				}
@@ -262,7 +262,9 @@ function getOpenStackController(bigCallback) {
 							imageRef: imageId,
 							flavorRef: flavorId,
 							key_name: keypairId,
-							security_groups: [{name: sgroupId}],
+							security_groups: [
+								{name: sgroupId}
+							],
 							user_data: new Buffer(getStartupScript(vmid)).toString('base64')
 						}, function (json) {
 							callback(json); // TODO: what if booting fails?
@@ -273,11 +275,11 @@ function getOpenStackController(bigCallback) {
 							callback(); // TODO: what if shutdown fails?
 						});
 					},
-                    getServer: function(id, callback) {
-                        client.getServer(id, function(json) {
-                            callback(json);
-                        });
-                    }
+					getServer: function (id, callback) {
+						client.getServer(id, function (json) {
+							callback(json);
+						});
+					}
 				});
 
 			});

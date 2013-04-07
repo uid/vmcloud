@@ -7,9 +7,47 @@ var child_process = require('child_process');
 var spawn = child_process.spawn;
 var exec = child_process.exec;
 var async = require('async');
-var config = require('./config.js');
+var config = require('./configurator.js');
 var common = require('./common.js');
 var log = common.log;
+
+function clearAllFirefoxProfiles(callback) {
+	log("Clearing all firefox profiles (deleting profiles.ini)");
+	exec('rm -f ~/.mozilla/firefox/profiles.ini', function (error) {
+		if (error) {
+			callback("Cannot remove all firefox profiles: " + JSON.stringify(error));
+		} else {
+			callback(null);
+		}
+	})
+}
+
+function initFirefoxProfileDirectory(callback) {
+	log("Initializing firefox profile directory " + config.external.firefox_profile_dir);
+	exec('mkdir -p ' + config.external.firefox_profile_dir, function (error) {
+		if (error) {
+			callback("Cannot create firefox profile directory: " + JSON.stringify(error));
+		} else {
+			callback(null);
+		}
+	});
+}
+
+/**
+ * Deletes a Firefox profile on the local VM. Asynchronous. Does not return.
+ * @param profile_name the name of the profile to delete
+ * @param callback called when the profile deletion is complete
+ */
+function deleteFirefoxProfile(profile_name, callback) {
+	log("Deleting firefox profile " + profile_name);
+	exec('rm -rf ' + config.external.firefox_profile_dir + profile_name, function (error, stdout, stderr) {
+		if (error) {
+			callback("Cannot delete firefox profile + " + profile_name + ": " + JSON.stringify(error));
+		} else {
+			callback(null);
+		}
+	});
+}
 
 
 /**
@@ -18,8 +56,9 @@ var log = common.log;
  * @param callback called when the profile creation is complete
  */
 function createFirefoxProfile(profile_name, callback) {
-	log("Creating firefox profile "+profile_name);
-	var proc = spawn('firefox', ['-CreateProfile', profile_name, '-new-instance']);
+	log("Creating firefox profile " + profile_name);
+	var proc = spawn('firefox', ['-CreateProfile',
+		profile_name + " " + config.external.firefox_profile_dir + profile_name, '-new-instance']);
 	proc.on('exit', function (code) {
 		if (code == 0) {
 			callback(null);
@@ -36,7 +75,7 @@ function createFirefoxProfile(profile_name, callback) {
  * @returns {*} the ChildProcess representing the firefox process
  */
 function launchFirefox(profile_name, home_page) {
-	log("Launching firefox with profile "+profile_name+" on home page "+home_page);
+	log("Launching firefox with profile " + profile_name + " on home page " + home_page);
 	return spawn('firefox', ['-P', profile_name, '-new-instance',
 		home_page]);
 }
@@ -48,7 +87,7 @@ function launchFirefox(profile_name, home_page) {
  * @param callback called with parameter (null) if success, or an error message otherwise.
  */
 function redirectAudio(sink_name, callback) {
-	log("Setting up audio redirection with sink "+sink_name);
+	log("Setting up audio redirection with sink " + sink_name);
 	async.series([
 		function (cb) {
 			log("loading null sink module");
@@ -90,7 +129,7 @@ function redirectAudio(sink_name, callback) {
  * @returns {*} the ChildProcess representing the publishing process
  */
 function publish_audio_rtsp(sink_name, port) {
-	log("Publishing sink "+sink_name+" to RTSP port "+port);
+	log("Publishing sink " + sink_name + " to RTSP port " + port);
 	return exec("parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
 		"cvlc -vvv - --demux=rawaud --rawaud-channels 1 --rawaud-samplerate 44100 --sout " +
 		"'#transcode{acodec=mp3, ab=192}:rtp{dst=0.0.0.0,port=" + port + ",sdp=rtsp://0.0.0.0:" + port + "/}'");
@@ -107,19 +146,22 @@ function initial_bootup(callback) {
 	var port = config.external.rtsp_publish_port;
 	var sink_name = config.external.audio_sink_name;
 	async.series([
-		function(cb) {
+		function (cb) {
+			initFirefoxProfileDirectory(cb);
+		},
+		function (cb) {
 			redirectAudio(sink_name, cb);
 		},
-		function(cb) {
+		function (cb) {
 			cb(null, publish_audio_rtsp(sink_name, port));
 		}
-	], function(err, result) {
+	], function (err, result) {
 		if (err) {
-			log("Error during initial bootup: "+err);
+			log("Error during initial bootup: " + err);
 			callback(err);
 		} else {
 			log("Initial bootup complete");
-			callback(null, result[1]);
+			callback(null, result[2]);
 		}
 	});
 	// TODO: do some monitoring on the process, such as when firefox closed. Probably need up propagate such event
@@ -134,21 +176,27 @@ function initial_bootup(callback) {
  * process
  */
 function setupSession(profile_name, home_page, callback) {
-	log("Setting up firefox session with profile "+profile_name+" and home page: "+home_page);
+	log("Setting up firefox session with profile " + profile_name + " and home page: " + home_page);
 	async.series([
-		function(cb) {
+		function (cb) {
+			clearAllFirefoxProfiles(cb);
+		},
+		function (cb) {
+			deleteFirefoxProfile(profile_name, cb);
+		},
+		function (cb) {
 			createFirefoxProfile(profile_name, cb);
 		},
-		function(cb) {
+		function (cb) {
 			cb(null, launchFirefox(profile_name, home_page));
 		}
-	], function(err, result) {
+	], function (err, result) {
 		if (err) {
-			log("Error setting up firefox session" + err);
+			log("Error setting up firefox session: " + err);
 			callback(err);
 		} else {
 			log("Firefox session setup successful.");
-			callback(null, result[1]);
+			callback(null, result[3]);
 		}
 	});
 	// TODO: do some monitoring on the process, such as when firefox closed. Probably need up propagate such event
@@ -161,11 +209,11 @@ function setupSession(profile_name, home_page, callback) {
  * @param callback called with (err) if error, or (null) if success.
  */
 function teardownSession(process, callback) {
-	log("Terminating session "+process);
-	process.on('exit', function(code, signal) {
+	log("Terminating session PID" + process.pid);
+	process.on('exit', function (code, signal) {
 		callback(null); // TODO: when would an error happen?
 	});
-	process.kill();
+	process.kill('SIGINT');
 }
 
 /**
@@ -175,7 +223,7 @@ function teardownSession(process, callback) {
  * the payload is passed to cleanup afterwards.
  */
 function prepare(data, callback) {
-	setupSession(data.profile_name, data.home_page, function(err, result) {
+	setupSession(data.profile_name, data.home_page, function (err, result) {
 		if (err) {
 			callback(err);
 		} else {

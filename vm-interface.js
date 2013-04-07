@@ -1,5 +1,5 @@
-var config = require('./config.js');
-var rpc = require('./rpc.js');
+var config = require('./configurator.js');
+var rpcEngine = require('./rpc.js');
 var express = require('express');
 var common = require('./common.js');
 var error = common.error;
@@ -8,27 +8,23 @@ var vlog = common.vlog;
 
 var vmActions = require('./vm-actions.js');
 
-var ctrl_server = config.control.host;
-var ctrl_port = config.control.port;
 var vmid = config.vmid;
 
 var VMStates = common.VMStates;
 
 var vmState = VMStates.BUSY;
 
+var rpc = config.rpcInterface;
+
 function runFirefoxPluginListenerServer() {
 
 	function browser_page_loaded(profile, url) {
 		log("Browser page loaded: " + JSON.stringify({profile: profile, url: url}));
-		rpc.connect(ctrl_port, ctrl_server, function (remote, conn) {
-			remote.browser_event(vmid, {
-				'action': 'page-load',
-				'profile': profile,
-				'url': url
-			}, function () {
-				conn.destroy();
-				conn.end();
-			});
+		rpc.browser_event(vmid, {
+			'action': 'page-load',
+			'profile': profile,
+			'url': url
+		}, function (result) {
 		});
 	}
 
@@ -64,31 +60,27 @@ function runFirefoxPluginListenerServer() {
 //////////////////////////////////////////////
 function vmCheckIn(callback) {
 	log("checking in, id = " + vmid);
-	rpc.connect(ctrl_port, ctrl_server, function (remote, conn) {
-		remote.checkin(vmid, function () {
-			log("Checkin successful.");
-			conn.destroy();
-			conn.end();
-			callback();
-		})
-	})
+	rpc.checkin(vmid, function () {
+		log("Checkin successful.");
+		callback();
+	});
 }
 
 // TODO: This is just to be simple. But if we want to ultimately support multiple instances per VM, this needs to be
 // changed somehow.
 var sessionPayload;
 
-function runRpcServer() {
-	var rpc_server = new rpc({
+function getRPCImpl() {
+	return {
 		ping: function (callback) {
 			callback({
 				state: vmState
 			});
 		},
 
-		prepare: function(data, callback) {
+		prepare: function (data, callback) {
 			vmState = VMStates.BUSY;
-			vmActions.prepare(data, function(err, result) {
+			vmActions.prepare(data, function (err, result) {
 				if (err) {
 					vmState = VMStates.ERROR
 				} else {
@@ -102,11 +94,11 @@ function runRpcServer() {
 			});
 		},
 
-		cleanup: function(data, callback) {
+		cleanup: function (data, callback) {
 			vmState = VMStates.BUSY;
 			vmActions.cleanup({
 				payload: sessionPayload
-			}, function(err, result) {
+			}, function (err, result) {
 				if (err) {
 					vmState = VMStates.ERROR;
 				} else {
@@ -119,23 +111,33 @@ function runRpcServer() {
 			});
 		}
 		// TODO: add debug commands such as enter error state
-	});
+	};
+}
+
+function runRpcServer() {
+	var rpc_server = new rpcEngine(getRPCImpl());
 	rpc_server.listen(config.vm.interface_port);
 }
 
 function runVMInterface() {
-	vmActions.initial_bootup(function(err, result) {
+	vmActions.initial_bootup(function (err, result) {
 		if (err) {
 			log("Initial bootup failed.");
 			vmState = VMStates.ERROR;
-			vmCheckIn(function(){});
+			vmCheckIn(function () {
+			});
 		} else {
 			runRpcServer();
 			runFirefoxPluginListenerServer();
-            vmState = VMStates.FREE;
-			vmCheckIn(function() {});
+			vmState = VMStates.FREE;
+			vmCheckIn(function () {
+			});
 		}
 	});
+
+	return {
+		rpcImpl: getRPCImpl()
+	};
 }
 
 exports = module.exports = runVMInterface;

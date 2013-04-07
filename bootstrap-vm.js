@@ -1,11 +1,13 @@
-var instance_config = require('/opt/vmcloud.json');
+var config = require('./configurator.js');
+var instance_config = require(config.boot_json_file);
 var exec = require('child_process').exec;
-var rpc = require('./rpc.js');
+var rpcBuilder = require('./rpc-builder.js');
+var controlInterface = require('./rpc-interfaces.js').controlInterface;
 var fs = require('fs');
 process.chdir(__dirname);
 
 // update from git
-exec('git fetch --all; git reset --hard origin/master', function(error, stdout, stderr) {
+exec('git fetch --all; git reset --hard origin/master', function (error, stdout, stderr) {
 	if (error !== null) {
 		console.log("[vmcloud] Warning: Cannot update from git repository");
 	}
@@ -14,25 +16,10 @@ exec('git fetch --all; git reset --hard origin/master', function(error, stdout, 
 	var ctrl_server = instance_config.control_server;
 	var ctrl_port = instance_config.control_port;
 	var vmid = instance_config.vmid;
-	rpc.connect(ctrl_port, ctrl_server, function (remote, conn) {
-		remote.getConfig(vmid, function (config_js) {
-			console.log("[vmcloud] Successfully fetched config file");
-			fs.writeFile('config.js', config_js, function(err) {
-				if (err) {
-					console.log("[vmcloud] Cannot write config file!");
-					throw err;
-				} else {
-					console.log("[vmcloud] Starting VM interface.");
-
-					var config = require('./config.js');
-					config.i_am_instance(vmid);
-					bootstrap_vm_instance();
-				}
-			});
-			conn.destroy();
-			conn.end();
-		})
-	})
+	var rpc = rpcBuilder.rpcInterface(ctrl_server, ctrl_port, controlInterface);
+	config.initInstance(vmid, rpc, function () {
+		bootstrap_vm_instance();
+	});
 });
 
 function bootstrap_vm_instance() {

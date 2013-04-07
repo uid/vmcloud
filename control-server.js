@@ -198,7 +198,7 @@ function runControlServer() {
 			var ver = vm.state.set(BeliefState.WAIT);
 			updateInstanceInfoFromOpenStack(vmid, function () {
 				vm.state.verSet(ver, BeliefState.FREE);
-				rpc[vmid] = rpcBuilder.rpcInterface(config.vm.interface_port, vm.server.addresses.private[0].addr,
+				rpc[vmid] = rpcBuilder.rpcInterface(vm.server.addresses.private[0].addr, config.vm.interface_port,
 					vmRPCInterface); // TODO: multiple addresses possible?
 				callback();
 			});

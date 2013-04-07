@@ -213,14 +213,10 @@ function runControlServer() {
 		},
 		getConfig: function (vmid, callback) {
 			vlog("VM #" + vmid + " fetching config.");
-			fs.readFile('config.js', 'utf8', function (err, data) {
-				if (err) {
-					log("Cannot fetch config file.");
-					callback('');
-				} else {
-					callback(data);
-				}
-			});
+			callback({
+				vm: config.vm,
+				external: config.external
+			})
 		}
 	});
 

@@ -18,7 +18,7 @@ module.exports = exports = {
 		this.vmid = vmid;
 		this.rpcInterface = rpcInterface;
 		var _this = this;
-		rpcInterface.getConfig(function (config) {
+		rpcInterface.getConfig(vmid, function (config) {
 			_this.vm = config.vm;
 			_this.external = config.external;
 			_this.isControl = false;

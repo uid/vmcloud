@@ -18,7 +18,7 @@ function rpcInterface(host, port, funcNames) {
 			var args = argArray.slice(0, argArray.length - 1);
 			var callback = argArray[argArray.length - 1];
 			doRPC(host, port, function (remote, cb) {
-				remote[name].apply(remote, args);
+				remote[name].apply(remote, args.concat([cb]));
 			}, function (result) {
 				callback(result);
 			});

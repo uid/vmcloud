@@ -264,7 +264,7 @@ function runControlServer() {
 			if (vm.state.get() == BeliefState.READY || vm.state.get() == BeliefState.OCCUPIED) {
 				var ver = vm.state.set(BeliefState.WAIT);
 				rpc[vmid].cleanup({}, function (result) {
-					vm.state.verSet(result.state == VMStates.FREE ? BeliefState.FREE : BeliefState.ERROR);
+					vm.state.verSet(ver, result.state == VMStates.FREE ? BeliefState.FREE : BeliefState.ERROR);
 				});
 			} else {
 				log("VM not in the correct state! State is " + BeliefState.name(vm.state.get()));

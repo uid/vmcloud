@@ -10,6 +10,7 @@ var async = require('async');
 var config = require('./configurator.js');
 var common = require('./common.js');
 var log = common.log;
+var _ = require('underscore.js');
 
 function clearAllFirefoxProfiles(callback) {
 	log("Clearing all firefox profiles (deleting profiles.ini)");
@@ -49,6 +50,39 @@ function deleteFirefoxProfile(profile_name, callback) {
 	});
 }
 
+/**
+ * Runs VNC server on the given display number. Callback is called when VNC server is running, with argument: null, {
+ *   passwd: the password to the VNC session
+ *   proc: the ChildProcess object
+ * }
+ */
+function runVNCserver(display_number, callback) {
+	log("Starting VNC server on display :"+display_number);
+
+	async.waterfall([function(cb) {
+		exec('rm -rf ~/.vnc/passwd', function(error, stdout, stderr) {
+			cb(error);
+		});
+	}, function(cb) {
+		var pass = _.shuffle('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')).join('');
+		exec('x11vnc -storepasswd '+pass+' ~/.vnc/passwd', function(error, stdout, stderr) {
+			cb(error, pass);
+		});
+	}, function(pass, cb) {
+		var process = exec('vncserver :'+display_number);
+		if (!('pid' in process)) {
+			cb("Failed to spawn vncserver process");
+		} else {
+			cb(null, {
+				passwd: pass,
+				proc: process
+			});
+		}
+	}], function(err, result) {
+		callback(err, result);
+	});
+}
+
 
 /**
  * Creates a Firefox profile on the local VM. Asynchronous. Does not return.
@@ -70,14 +104,14 @@ function createFirefoxProfile(profile_name, callback) {
 
 /**
  * Launch a Firefox instance with the given profile and home page
+ * @param display_number the display to use
  * @param profile_name profile name
  * @param home_page the home page Firefox will go to initially
  * @returns {*} the ChildProcess representing the firefox process
  */
-function launchFirefox(profile_name, home_page) {
+function launchFirefox(display_number, profile_name, home_page) {
 	log("Launching firefox with profile " + profile_name + " on home page " + home_page);
-	return spawn('firefox', ['-P', profile_name, '-new-instance',
-		home_page]);
+	return exec('DISPLAY=:'+display_number+' firefox -P ' + profile_name + ' -new-instance '+ home_page);
 }
 
 /**
@@ -187,8 +221,11 @@ function setupSession(profile_name, home_page, callback) {
 		function (cb) {
 			createFirefoxProfile(profile_name, cb);
 		},
+		function(cb) {
+			runVNCserver(10, cb);
+		},
 		function (cb) {
-			cb(null, launchFirefox(profile_name, home_page));
+			cb(null, launchFirefox(10, profile_name, home_page));
 		}
 	], function (err, result) {
 		if (err) {
@@ -196,7 +233,11 @@ function setupSession(profile_name, home_page, callback) {
 			callback(err);
 		} else {
 			log("Firefox session setup successful.");
-			callback(null, result[3]);
+			callback(null, {
+				firefox_proc: result[3],
+				vnc_passwd: result[4].passwd,
+				vnc_proc: result[4].proc
+			});
 		}
 	});
 	// TODO: do some monitoring on the process, such as when firefox closed. Probably need up propagate such event
@@ -205,15 +246,25 @@ function setupSession(profile_name, home_page, callback) {
 
 /**
  * Terminate a Firefox session.
- * @param process the ChildProcess object given with the callback by setupSession.
+ * @param data the object given with the callback by setupSession.
  * @param callback called with (err) if error, or (null) if success.
  */
-function teardownSession(process, callback) {
-	log("Terminating session PID" + process.pid);
-	process.on('exit', function (code, signal) {
-		callback(null); // TODO: when would an error happen?
+function teardownSession(data, callback) {
+	log("Terminating firefox (PID: " + data.firefox_proc.pid + ")");
+	log("Terminating VNC (PID: " + data.vnc_proc.pid + ")");
+	async.waterfall([function(cb) {
+		data.firefox_proc.on('exit', function (code, signal) {
+			cb(null); // TODO: when would an error happen?
+		});
+		data.firefox_proc.kill('SIGINT');
+	}, function(cb) {
+		data.vnc_proc.on('exit', function(code, signal) {
+			cb(null);
+		});
+		data.vnc_proc.kill('SIGKILL');
+	}], function(err) {
+		callback(err);
 	});
-	process.kill('SIGINT');
 }
 
 /**

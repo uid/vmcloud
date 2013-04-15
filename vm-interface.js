@@ -88,7 +88,9 @@ function getRPCImpl() {
 					sessionPayload = result;
 				}
 				callback({
-					pid: result.process.pid,
+					firefox_pid: result.firefox_proc.pid,
+					vnc_pid: result.vnc_proc.pid,
+					vnc_passwd: result.vnc_passwd,
 					state: vmState
 				});
 			});

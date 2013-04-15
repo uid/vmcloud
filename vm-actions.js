@@ -10,7 +10,7 @@ var async = require('async');
 var config = require('./configurator.js');
 var common = require('./common.js');
 var log = common.log;
-var _ = require('underscore.js');
+var _ = require('underscore');
 
 function clearAllFirefoxProfiles(callback) {
 	log("Clearing all firefox profiles (deleting profiles.ini)");
@@ -64,12 +64,14 @@ function runVNCserver(display_number, callback) {
 			cb(error);
 		});
 	}, function(cb) {
-		var pass = _.shuffle('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')).join('');
+		var pass = _.shuffle('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''))
+			.join('').substr(0,8);
+		log("VNC password: "+pass);
 		exec('x11vnc -storepasswd '+pass+' ~/.vnc/passwd', function(error, stdout, stderr) {
 			cb(error, pass);
 		});
 	}, function(pass, cb) {
-		var process = exec('vncserver :'+display_number);
+		var process = spawn('vncserver', [':'+display_number]);
 		if (!('pid' in process)) {
 			cb("Failed to spawn vncserver process");
 		} else {
@@ -79,8 +81,16 @@ function runVNCserver(display_number, callback) {
 			});
 		}
 	}], function(err, result) {
-		callback(err, result);
+		setTimeout(function(){
+			callback(err, result)
+		}, 1000);
 	});
+}
+
+function killVNCserver(display_number, callback) {
+	exec('vncserver -kill :'+display_number, function(error, stdout, stderr) {
+		callback(error);
+	})
 }
 
 
@@ -111,7 +121,8 @@ function createFirefoxProfile(profile_name, callback) {
  */
 function launchFirefox(display_number, profile_name, home_page) {
 	log("Launching firefox with profile " + profile_name + " on home page " + home_page);
-	return exec('DISPLAY=:'+display_number+' firefox -P ' + profile_name + ' -new-instance '+ home_page);
+	return spawn('firefox', ['-P', profile_name, '-new-instance',
+		home_page], {env: {DISPLAY: ":"+display_number}});
 }
 
 /**
@@ -234,9 +245,9 @@ function setupSession(profile_name, home_page, callback) {
 		} else {
 			log("Firefox session setup successful.");
 			callback(null, {
-				firefox_proc: result[3],
-				vnc_passwd: result[4].passwd,
-				vnc_proc: result[4].proc
+				firefox_proc: result[4],
+				vnc_passwd: result[3].passwd,
+				vnc_proc: result[3].proc
 			});
 		}
 	});
@@ -258,10 +269,7 @@ function teardownSession(data, callback) {
 		});
 		data.firefox_proc.kill('SIGINT');
 	}, function(cb) {
-		data.vnc_proc.on('exit', function(code, signal) {
-			cb(null);
-		});
-		data.vnc_proc.kill('SIGKILL');
+		killVNCserver(10, cb);
 	}], function(err) {
 		callback(err);
 	});
@@ -278,9 +286,7 @@ function prepare(data, callback) {
 		if (err) {
 			callback(err);
 		} else {
-			callback(null, {
-				process: result
-			});
+			callback(null, result);
 		}
 	});
 }
@@ -291,7 +297,7 @@ function prepare(data, callback) {
  * @param callback called with (err) if error, or (null) if success
  */
 function cleanup(data, callback) {
-	teardownSession(data.payload.process, callback);
+	teardownSession(data.payload, callback);
 }
 
 module.exports = exports = {

@@ -9,7 +9,7 @@ module.exports = exports = {
 	browser_event: function (vmid, data, callback) {
 		callback();
 	},
-	getConfig: function (callback) {
+	getConfig: function (vmid, callback) {
 		callback({
 			vm: {
 				firefox_port: 9091,

@@ -27,7 +27,8 @@ module.exports = exports = {
 		external_port: 8080,
 
 		// time (milliseconds) to kill VM if VM hasn't responded for this long
-		watchdog_timeout: 20000
+		watchdog_timeout: 20*1000,
+		watchdog_bootup_timeout: 4*60*1000 // time to kill VM if it does not finish booting within this long
 	},
 
 	vm: {

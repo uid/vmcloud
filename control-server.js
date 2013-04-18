@@ -170,8 +170,14 @@ function getVMWatchdog() {
 						knowledge[vmid].lastVer = ver;
 						knowledge[vmid].time = time;
 					} else {
-						if (time - knowledge[vmid].time > config.control.watchdog_timeout) {
-							killVM(vmid);
+						if (state == BeliefState.BOOTING) {
+							if (time - knowledge[vmid].time > config.control.watchdog_bootup_timeout) {
+								killVM(vmid);
+							}
+						} else {
+							if (time - knowledge[vmid].time > config.control.watchdog_timeout) {
+								killVM(vmid);
+							}
 						}
 					}
 				}

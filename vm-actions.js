@@ -202,7 +202,7 @@ function redirectAudio(sink_name, callback) {
  */
 function publish_audio_rtsp(sink_name, port) {
 	log("Publishing sink " + sink_name + " to RTSP port " + port);
-	return exec_dbg("parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
+	return exec("parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
 		"cvlc -vvv - --demux=rawaud --rawaud-channels 1 --rawaud-samplerate 44100 --sout " +
 		"'#transcode{acodec=mp3, ab=192}:rtp{dst=0.0.0.0,port=" + port + ",sdp=rtsp://0.0.0.0:" + port + "/}'");
 }

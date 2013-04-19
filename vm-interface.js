@@ -82,17 +82,19 @@ function getRPCImpl() {
 			vmState = VMStates.BUSY;
 			vmActions.prepare(data, function (err, result) {
 				if (err) {
-					vmState = VMStates.ERROR
+					vmState = VMStates.ERROR;
+					callback({
+						state: vmState
+					});
 				} else {
 					vmState = VMStates.READY;
 					sessionPayload = result;
+					callback({
+						firefox_pid: result.firefox_proc.pid,
+						vnc_passwd: result.vnc_passwd,
+						state: vmState
+					});
 				}
-				callback({
-					firefox_pid: result.firefox_proc.pid,
-					vnc_pid: result.vnc_proc.pid,
-					vnc_passwd: result.vnc_passwd,
-					state: vmState
-				});
 			});
 		},
 
@@ -103,13 +105,16 @@ function getRPCImpl() {
 			}, function (err, result) {
 				if (err) {
 					vmState = VMStates.ERROR;
+					callback({
+						state: vmState
+					});
 				} else {
 					vmState = VMStates.FREE;
+					callback({
+						result: result,
+						state: vmState
+					});
 				}
-				callback({
-					result: result,
-					state: vmState
-				});
 			});
 		}
 		// TODO: add debug commands such as enter error state

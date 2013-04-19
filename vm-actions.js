@@ -76,31 +76,29 @@ function deleteFirefoxProfile(profile_name, callback) {
 function runVNCserver(display_number, callback) {
 	log("Starting VNC server on display :"+display_number);
 
-	async.waterfall([function(cb) {
-		exec('rm -rf ~/.vnc/passwd', function(error, stdout, stderr) {
+	async.waterfall([function (cb) {
+		exec('rm -rf ~/.vnc/passwd', function (error, stdout, stderr) {
 			cb(error);
 		});
-	}, function(cb) {
+	}, function (cb) {
 		var pass = _.shuffle('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''))
-			.join('').substr(0,8);
-		log("VNC password: "+pass);
-		exec('x11vnc -storepasswd '+pass+' ~/.vnc/passwd', function(error, stdout, stderr) {
+			.join('').substr(0, 8);
+		log("VNC password: " + pass);
+		exec('x11vnc -storepasswd ' + pass + ' ~/.vnc/passwd', function (error, stdout, stderr) {
 			cb(error, pass);
 		});
-	}, function(pass, cb) {
-		var process = spawn('vncserver', [':'+display_number]);
-		if (!('pid' in process)) {
-			cb("Failed to spawn vncserver process");
-		} else {
-			cb(null, {
-				passwd: pass,
-				proc: process
-			});
-		}
-	}], function(err, result) {
-		setTimeout(function(){
-			callback(err, result)
-		}, 1000);
+	}, function (pass, cb) {
+		exec('vncserver :' + display_number, function (error, stdout, stderr) {
+			if (error) {
+				cb(error);
+			} else {
+				cb(null, {
+					passwd: pass
+				});
+			}
+		});
+	}], function (err, result) {
+		callback(err, result);
 	});
 }
 
@@ -263,8 +261,7 @@ function setupSession(profile_name, home_page, callback) {
 			log("Firefox session setup successful.");
 			callback(null, {
 				firefox_proc: result[4],
-				vnc_passwd: result[3].passwd,
-				vnc_proc: result[3].proc
+				vnc_passwd: result[3].passwd
 			});
 		}
 	});
@@ -279,7 +276,7 @@ function setupSession(profile_name, home_page, callback) {
  */
 function teardownSession(data, callback) {
 	log("Terminating firefox (PID: " + data.firefox_proc.pid + ")");
-	log("Terminating VNC (PID: " + data.vnc_proc.pid + ")");
+	log("Terminating VNC");
 	async.waterfall([function(cb) {
 		data.firefox_proc.on('exit', function (code, signal) {
 			cb(null); // TODO: when would an error happen?

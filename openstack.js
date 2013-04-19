@@ -138,6 +138,26 @@ function V2Client(arg_tenant_id, arg_authToken) {
 		});
 	};
 
+	this.removeFloatingIP = function (server_id, ip, callback) {
+		request({
+			url: nova_url + "/" + this.tenant_id + "/servers/" + server_id + "/action",
+			method: "POST",
+			headers: {
+				'X-Auth-Token': this.authToken,
+				'Content-type': 'application/json'
+			},
+			body: JSON.stringify({
+				removeFloatingIp: {
+					address: ip
+				}
+			})
+		}, function (e, r, body) {
+			callback();
+		});
+	};
+
+
+
 	this.boot = function (params, callback) {
 		request({
 			url: nova_url + "/" + this.tenant_id + "/servers",
@@ -278,6 +298,22 @@ function getOpenStackController(bigCallback) {
 					getServer: function (id, callback) {
 						client.getServer(id, function (json) {
 							callback(json);
+						});
+					},
+					assignIP: function(id, callback) {
+						client.getFloatingIPs(function(ips) {
+							if (ip.length == 0) {
+								callback("No more floating IPs available");
+							} else {
+								client.addFloatingIP(id, ips[0].ip, function() {
+									callback(null, ips[0].ip);
+								});
+							}
+						})
+					},
+					removeIP: function(id, ip, callback) {
+						client.removeFloatingIP(id, ip, function() {
+							callback(null);
 						});
 					}
 				});

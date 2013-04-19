@@ -10,6 +10,7 @@ var dlog = common.dlog;
 var openstack = require('./openstack.js');
 var express = require('express');
 var fs = require('fs');
+var async = require('async');
 
 var vmData = {}; // TODO: put in database
 var rpc = {};
@@ -249,12 +250,30 @@ function runControlServer() {
 			var vm = vmData[vmid];
 			if (vm.state.get() == BeliefState.FREE) {
 				var ver = vm.state.set(BeliefState.WAIT);
-				rpc[vmid].prepare({
-					profile_name: 'vmprofile',
-					home_page: req.params.url
-				}, function (result) {
-					vm.state.verSet(ver, result.state == VMStates.READY ? BeliefState.READY : BeliefState.ERROR);
-				});
+					async.parallel([function (cb) {
+						rpc[vmid].prepare({
+							profile_name: 'vmprofile',
+							home_page: req.params.url
+						}, function (result) {
+							cb(null, result);
+						});
+					}, function (cb) {
+						openstackController.assignIP(vm.server.id, function(err, ip) {
+							if (err) {
+								cb(err);
+							} else {
+								vm.server.public_ip = ip;
+								cb(null);
+							}
+						});
+					}], function (err, result) {
+						if (err) {
+							vm.state.verSet(ver, BeliefState.ERROR);
+							log(err);
+						} else {
+							vm.state.verSet(ver, result[0].state == VMStates.READY ? BeliefState.READY : BeliefState.ERROR);
+						}
+					});
 			} else {
 				log("VM not in the correct state! State is " + BeliefState.name(vm.state.get()));
 			}
@@ -269,8 +288,26 @@ function runControlServer() {
 			var vm = vmData[vmid];
 			if (vm.state.get() == BeliefState.READY || vm.state.get() == BeliefState.OCCUPIED) {
 				var ver = vm.state.set(BeliefState.WAIT);
-				rpc[vmid].cleanup({}, function (result) {
-					vm.state.verSet(ver, result.state == VMStates.FREE ? BeliefState.FREE : BeliefState.ERROR);
+				async.parallel([function(cb) {
+					rpc[vmid].cleanup({}, function (result) {
+						cb(null, result);
+					});
+				}, function(cb) {
+					openstackController.removeIP(vm.server.id, function(err) {
+						if (err) {
+							cb(err);
+						} else {
+							delete vm.server.public_ip;
+							cb(null);
+						}
+					});
+				}], function(err, result) {
+					if (err) {
+						vm.state.verSet(ver, BeliefState.ERROR);
+						log(err);
+					} else {
+						vm.state.verSet(ver, result[0].state == VMStates.FREE ? BeliefState.FREE : BeliefState.ERROR);
+					}
 				});
 			} else {
 				log("VM not in the correct state! State is " + BeliefState.name(vm.state.get()));

@@ -12,6 +12,18 @@ var common = require('./common.js');
 var log = common.log;
 var _ = require('underscore');
 
+function spawn_dbg(name, args) {
+	log("Launching " + name + " with args " + args);
+	var proc = spawn(name, args);
+	proc.stdout.on('data', function(data) {
+		log("<" + name + "/stdout>: "+data);
+	});
+	proc.stderr.on('data', function(data) {
+		log("<" + name + "/stderr>: "+data);
+	});
+	return proc;
+}
+
 function clearAllFirefoxProfiles(callback) {
 	log("Clearing all firefox profiles (deleting profiles.ini)");
 	exec('rm -f ~/.mozilla/firefox/profiles.ini', function (error) {
@@ -101,7 +113,7 @@ function killVNCserver(display_number, callback) {
  */
 function createFirefoxProfile(profile_name, callback) {
 	log("Creating firefox profile " + profile_name);
-	var proc = spawn('firefox', ['-CreateProfile',
+	var proc = spawn_dbg('firefox', ['-CreateProfile',
 		profile_name + " " + config.external.firefox_profile_dir + profile_name, '-new-instance']);
 	proc.on('exit', function (code) {
 		if (code == 0) {
@@ -121,7 +133,7 @@ function createFirefoxProfile(profile_name, callback) {
  */
 function launchFirefox(display_number, profile_name, home_page) {
 	log("Launching firefox with profile " + profile_name + " on home page " + home_page);
-	return spawn('firefox', ['-P', profile_name, '-new-instance',
+	return spawn_dbg('firefox', ['-P', profile_name, '-new-instance',
 		home_page], {env: {DISPLAY: ":"+display_number}});
 }
 
@@ -136,7 +148,7 @@ function redirectAudio(sink_name, callback) {
 	async.series([
 		function (cb) {
 			log("loading null sink module");
-			var proc = spawn('pactl', ['load-module', 'module-null-sink',
+			var proc = spawn_dbg('pactl', ['load-module', 'module-null-sink',
 				'sink_name=' + sink_name]);
 			proc.on('exit', function (code) {
 				if (code == 0) {
@@ -148,7 +160,7 @@ function redirectAudio(sink_name, callback) {
 		},
 		function (cb) {
 			log("setting default sink");
-			var proc = spawn('pacmd', ['set-default-sink', sink_name]);
+			var proc = spawn_dbg('pacmd', ['set-default-sink', sink_name]);
 			proc.on('exit', function (code) {
 				if (code == 0) {
 					cb(null, null);

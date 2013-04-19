@@ -293,7 +293,7 @@ function runControlServer() {
 						cb(null, result);
 					});
 				}, function(cb) {
-					openstackController.removeIP(vm.server.id, function(err) {
+					openstackController.removeIP(vm.server.id, vm.server.public_ip, function(err) {
 						if (err) {
 							cb(err);
 						} else {

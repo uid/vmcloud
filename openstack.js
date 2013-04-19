@@ -302,7 +302,7 @@ function getOpenStackController(bigCallback) {
 					},
 					assignIP: function(id, callback) {
 						client.getFloatingIPs(function(ips) {
-							if (ip.length == 0) {
+							if (ips.length == 0) {
 								callback("No more floating IPs available");
 							} else {
 								client.addFloatingIP(id, ips[0].ip, function() {

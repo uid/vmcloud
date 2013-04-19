@@ -29,9 +29,21 @@ function spawn_dbg(name, args, opt) {
 	return proc;
 }
 
+function exec_dbg(cmd, callback) {
+	log("Executing "+cmd);
+	var proc = exec(cmd, callback);
+	proc.stdout.on('data', function(data) {
+		log("<" + cmd + "/stdout>: "+data);
+	});
+	proc.stderr.on('data', function(data) {
+		log("<" + cmd + "/stderr>: "+data);
+	});
+	return proc;
+}
+
 function clearAllFirefoxProfiles(callback) {
 	log("Clearing all firefox profiles (deleting profiles.ini)");
-	exec('rm -f ~/.mozilla/firefox/profiles.ini', function (error) {
+	exec_dbg('rm -f ~/.mozilla/firefox/profiles.ini', function (error) {
 		if (error) {
 			callback("Cannot remove all firefox profiles: " + JSON.stringify(error));
 		} else {
@@ -42,7 +54,7 @@ function clearAllFirefoxProfiles(callback) {
 
 function initFirefoxProfileDirectory(callback) {
 	log("Initializing firefox profile directory " + config.external.firefox_profile_dir);
-	exec('mkdir -p ' + config.external.firefox_profile_dir, function (error) {
+	exec_dbg('mkdir -p ' + config.external.firefox_profile_dir, function (error) {
 		if (error) {
 			callback("Cannot create firefox profile directory: " + JSON.stringify(error));
 		} else {
@@ -58,7 +70,7 @@ function initFirefoxProfileDirectory(callback) {
  */
 function deleteFirefoxProfile(profile_name, callback) {
 	log("Deleting firefox profile " + profile_name);
-	exec('rm -rf ' + config.external.firefox_profile_dir + profile_name, function (error, stdout, stderr) {
+	exec_dbg('rm -rf ' + config.external.firefox_profile_dir + profile_name, function (error, stdout, stderr) {
 		if (error) {
 			callback("Cannot delete firefox profile + " + profile_name + ": " + JSON.stringify(error));
 		} else {
@@ -77,18 +89,18 @@ function runVNCserver(display_number, callback) {
 	log("Starting VNC server on display :"+display_number);
 
 	async.waterfall([function (cb) {
-		exec('rm -rf ~/.vnc/passwd', function (error, stdout, stderr) {
+		exec_dbg('rm -rf ~/.vnc/passwd', function (error, stdout, stderr) {
 			cb(error);
 		});
 	}, function (cb) {
 		var pass = _.shuffle('abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''))
 			.join('').substr(0, 8);
 		log("VNC password: " + pass);
-		exec('x11vnc -storepasswd ' + pass + ' ~/.vnc/passwd', function (error, stdout, stderr) {
+		exec_dbg('x11vnc -storepasswd ' + pass + ' ~/.vnc/passwd', function (error, stdout, stderr) {
 			cb(error, pass);
 		});
 	}, function (pass, cb) {
-		exec('vncserver :' + display_number, function (error, stdout, stderr) {
+		exec_dbg('vncserver :' + display_number, function (error, stdout, stderr) {
 			if (error) {
 				cb(error);
 			} else {
@@ -103,7 +115,7 @@ function runVNCserver(display_number, callback) {
 }
 
 function killVNCserver(display_number, callback) {
-	exec('vncserver -kill :'+display_number, function(error, stdout, stderr) {
+	exec_dbg('vncserver -kill :'+display_number, function(error, stdout, stderr) {
 		callback(error);
 	})
 }
@@ -190,7 +202,7 @@ function redirectAudio(sink_name, callback) {
  */
 function publish_audio_rtsp(sink_name, port) {
 	log("Publishing sink " + sink_name + " to RTSP port " + port);
-	return exec("parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
+	return exec_dbg("parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
 		"cvlc -vvv - --demux=rawaud --rawaud-channels 1 --rawaud-samplerate 44100 --sout " +
 		"'#transcode{acodec=mp3, ab=192}:rtp{dst=0.0.0.0,port=" + port + ",sdp=rtsp://0.0.0.0:" + port + "/}'");
 }

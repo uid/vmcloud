@@ -174,6 +174,13 @@ function getVMWatchdog() {
 						if (state == BeliefState.BOOTING) {
 							if (time - knowledge[vmid].time > config.control.watchdog_bootup_timeout) {
 								killVM(vmid);
+							} else {
+								openstackController.getServer(vm.server.id, function(server) {
+									if (server.status == 'ERROR') {
+										log("VM #" + vmid + " launching error. Killing VM.");
+										killVM(vmid);
+									}
+								});
 							}
 						} else {
 							if (time - knowledge[vmid].time > config.control.watchdog_timeout) {
@@ -182,7 +189,7 @@ function getVMWatchdog() {
 						}
 					}
 				}
-			}, 1000);
+			}, 4000);
 		}
 	}
 }

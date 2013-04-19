@@ -100,7 +100,7 @@ function runVNCserver(display_number, callback) {
 			cb(error, pass);
 		});
 	}, function (pass, cb) {
-		exec_dbg('vncserver :' + display_number, function (error, stdout, stderr) {
+		exec_dbg('XAUTHORITY=/home/vmuser/.Xauthority vncserver :' + display_number, function (error, stdout, stderr) {
 			if (error) {
 				cb(error);
 			} else {

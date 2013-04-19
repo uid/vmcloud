@@ -12,9 +12,14 @@ var common = require('./common.js');
 var log = common.log;
 var _ = require('underscore');
 
-function spawn_dbg(name, args) {
+function spawn_dbg(name, args, opt) {
 	log("Launching " + name + " with args " + args);
-	var proc = spawn(name, args);
+	var proc;
+	if (opt) {
+		proc = spawn(name, args, opt);
+	} else {
+		proc = spawn(name, args);
+	}
 	proc.stdout.on('data', function(data) {
 		log("<" + name + "/stdout>: "+data);
 	});

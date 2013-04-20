@@ -68,7 +68,7 @@ function killVM(vmid) {
 		return;
 	}
 	vm.state.set(BeliefState.WAIT);
-	openstackController.kill(id, function (id) {
+	openstackController.kill(id, function () {
 		log("Successfully terminated: " + vmid + ": " + id);
 		delete vmData[vmid];
 	})

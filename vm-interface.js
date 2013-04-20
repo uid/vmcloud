@@ -3,6 +3,7 @@ var rpcEngine = require('./rpc.js');
 var express = require('express');
 var common = require('./common.js');
 var error = common.error;
+var fs = require('fs');
 var log = common.log;
 var vlog = common.vlog;
 
@@ -128,7 +129,7 @@ function runFlashPolicyServer() {
 		res.header('Content-Type', 'application/xml');
 		res.send(fs.readFileSync('static/flashpolicy.xml', {encoding:'utf8'}));
 	});
-	flash_policy_app.listen(843);
+	flash_policy_app.listen(1234);
 }
 
 function runRpcServer() {

@@ -1,9 +1,9 @@
 (function($) {
 
-$.fn.audioPlayer = function(audioUrl, iconize) {
+$.fn.audioPlayer = function(audioUrl) {
   this.empty();
   this.flash({
-    src: iconize? "player-icon.swf" : "player.swf",
+    src: "streamer.swf",
     width:112,
     height:29,
     flashvars:{audioUrl:audioUrl}

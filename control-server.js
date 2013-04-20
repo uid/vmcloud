@@ -177,7 +177,7 @@ function getVMWatchdog() {
 							} else {
 								(function (vmid) {
 									openstackController.getServer(vm.server.id, function (server) {
-										if (server.status == 'ERROR') {
+										if (server && server.status == 'ERROR') {
 											log("VM #" + vmid + " launching error. Killing VM.");
 											killVM(vmid);
 										}

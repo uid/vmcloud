@@ -3,6 +3,7 @@
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
 <script src="vmcloud.js"></script>
+<script src="flash.js"></script>
 <script>
     var ip = null;
     var vnc_port = 5910;
@@ -34,7 +35,7 @@
                                 .append(remote);
                         if (vm.server && vm.server.public_ip && vm.vnc_passwd) {
                             (function (vncpass, ip) {
-                                remote.append($("<button>").click(function () {
+                                remote.append($("<button>").text('Remote!').click(function () {
                                     $("#vnc").empty();
                                     $("#vnc").flash({
                                         src: 'Flashlight.swf',

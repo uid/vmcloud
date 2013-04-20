@@ -1,0 +1,86 @@
+<html>
+<head>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+<script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+<script>
+    var endpoint = null;
+    $(document).ready(function() {
+        $("#control-ok").click(function() {
+            endpoint = "http://"+$('#control-ip').val()+":"+$('#control-port').val()+"/";
+            $("#config-panel").hide();
+            $("#control-panel").show();
+            setInterval(function() {
+                $.get(endpoint+"status", function(json){
+                    var table = $("#status-table");
+                    table.find("tbody").empty();
+                    var vmData = [];
+                    for(var vmid in json) {
+                        json[vmid].id=vmid;
+                        vmData.push(json[vmid]);
+                    }
+                    vmData.sort(function(x,y){return x.id - y.id;});
+                    for (var i=0;i<vmData.length;i++) {
+                        var vm = json[i];
+                        var tr = $("<tr>")
+                                .append($("<td>").text(vm.id))
+                                .append($("<td>").text(vm.status))
+                                .append($("<td>").text(vm.server && vm.server.public_ip?vm.public_ip:"None"))
+                                .append($("<td>").text(vm.vnc_passwd?vm.vnc_passwd:"None"));
+                        table.find("tbody").append(tr);
+                    }
+                }, 'json');
+            }, 1000);
+        });
+        $("#set-num-vm").click(function() {
+            $.get(endpoint+"set-num-vm/"+$("#num-vm").val());
+        });
+        $("#prepare").click(function() {
+            $.get(endpoint+"prepare/"+$("#vm-id").val()+"/"+$("#homepage").val());
+        });
+        $("#cleanup").click(function() {
+            $.get(endpoint+"cleanup/"+$("#vm-id").val());
+        });
+
+    });
+</script>
+</head>
+<body>
+<div id="config-panel">
+<label for="control-ip">Control Server IP: </label><input type="text" id="control-ip"/>
+<label for="control-port">Port: </label><input type="text" id="control-port"/>
+<button id="control-ok">OK</button>
+<br/>
+</div>
+<div id="control-panel" style="display:none">
+<label for="num-vm">Set #VMs: </label><input type="text" id="num-vm"/>
+<button id="set-num-vm">Go</button>
+<br/>
+<br/>
+
+<label for="vm-id">For VM ID: </label><input type="text" id="vm-id"/>
+<br/>
+<label for="homepage">Homepage: </label><input type="text" id="homepage"/>
+<button id="prepare">Prepare</button>
+<br/>
+<button id="cleanup">Cleanup</button>
+<br/>
+<br/>
+
+<table id="status-table" border="1" cellspacing="0" cellpadding="5">
+    <thead>
+    <tr>
+        <td>-- VM ID --</td>
+        <td>-- State --</td>
+        <td>-- Public IP --</td>
+        <td>-- VNC password --</td>
+    </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+</div>
+
+
+</body>
+</html>

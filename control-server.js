@@ -241,6 +241,14 @@ function runControlServer() {
 	var watchdog = getVMWatchdog();
 
 	var app = express();
+
+	app.all('*', function(req, res, next) {
+		res.header('Access-Control-Allow-Origin', '*');
+		res.header('Access-Control-Allow-Methods', 'PUT, GET, POST, DELETE, OPTIONS');
+		res.header('Access-Control-Allow-Headers', 'Content-Type');
+		next();
+	});
+
 	app.get('/set-num-vm/:num', function (req, res) {
 		log('Received web request to set number of vm to ' + req.params.num);
 		if (req.params.num > 10) {
@@ -264,6 +272,7 @@ function runControlServer() {
 							profile_name: 'vmprofile',
 							home_page: req.params.url
 						}, function (result) {
+							vm.vnc_passwd = result.vnc_passwd;
 							cb(null, result);
 						});
 					}, function (cb) {
@@ -299,6 +308,7 @@ function runControlServer() {
 				var ver = vm.state.set(BeliefState.WAIT);
 				async.parallel([function(cb) {
 					rpc[vmid].cleanup({}, function (result) {
+						delete vm.vnc_passwd;
 						cb(null, result);
 					});
 				}, function(cb) {
@@ -323,6 +333,11 @@ function runControlServer() {
 			}
 		}
 		res.send('');
+	});
+
+	app.get('/status', function(req, res) {
+		//log("Received web request to query status");
+		res.send(JSON.stringify(vmData));
 	});
 
 

@@ -1,6 +1,6 @@
 sed -i "/^# deb.*multiverse/ s/^# //" /etc/apt/sources.list
 apt-get update
-DEBIAN_FRONTEND=noninteractive apt-get -y ubuntu-desktop nodejs ffmpeg libavcodec-extra-53 vlc ubuntu-restricted-extras tightvncserver x11vnc icecast2 darkice
+DEBIAN_FRONTEND=noninteractive apt-get -y install ubuntu-desktop nodejs ffmpeg libavcodec-extra-53 vlc ubuntu-restricted-extras tightvncserver x11vnc icecast2 darkice
 
 userdel vmuser
 rm -rf /home/vmuser

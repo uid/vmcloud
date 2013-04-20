@@ -4,6 +4,7 @@
 <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
 <script src="vmcloud.js"></script>
 <script src="flash.js"></script>
+<script src="audio-player.js"></script>
 <script>
     var vnc_port = 5910;
     var endpoint = null;
@@ -51,6 +52,8 @@
                                             jpegCompression: 7
                                         }
                                     });
+                                    $("#audio").empty();
+                                    $("#audio").audioPlayer("http://"+ip+":8090/feed1.mp3", true);
                                 }));
                             })(vm.vnc_passwd, vm.server.public_ip);
                         }
@@ -111,6 +114,7 @@
 </div>
 
 <div id="vnc"></div>
+<div id="audio"></div>
 
 </body>
 </html>

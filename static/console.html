@@ -2,6 +2,7 @@
 <head>
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+<script src="vmcloud.js"></script>
 <script>
     var endpoint = null;
     $(document).ready(function() {
@@ -23,7 +24,7 @@
                         var vm = vmData[i];
                         var tr = $("<tr>")
                                 .append($("<td>").text(vm.id))
-                                .append($("<td>").text(vm.state))
+                                .append($("<td>").text(BeliefState.name(vm.state.state)))
                                 .append($("<td>").text(vm.server && vm.server.public_ip?vm.public_ip:"None"))
                                 .append($("<td>").text(vm.vnc_passwd?vm.vnc_passwd:"None"));
                         table.find("tbody").append(tr);

@@ -123,13 +123,28 @@ function getRPCImpl() {
 }
 
 function runFlashPolicyServer() {
-	var flash_policy_app = express();
-	flash_policy_app.get('*', function(req, res) {
-		log("Received request for flash policy");
-		res.header('Content-Type', 'application/xml');
-		res.send(fs.readFileSync('static/flashpolicy.xml', {encoding:'utf8'}));
+	var net = require("net");
+
+	var flashPolicyServer = net.createServer(function (stream) {
+		stream.setTimeout(0);
+		stream.setEncoding("utf8");
+
+		stream.addListener("connect", function () {
+		});
+
+		stream.addListener("data", function (data) {
+			if ( data.indexOf('<policy-file-request/>') != -1){
+				stream.write('<cross-domain-policy><allow-access-from domain="*" to-ports="*" /></cross-domain-policy>');
+			}
+			stream.end();
+		});
+
+		stream.addListener("end", function() {
+			stream.end();
+		});
 	});
-	flash_policy_app.listen(1234);
+
+	flashPolicyServer.listen(1234);
 }
 
 function runRpcServer() {

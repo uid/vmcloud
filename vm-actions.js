@@ -207,6 +207,17 @@ function publish_audio_rtsp(sink_name, port) {
 		"'#transcode{acodec=mp3, ab=192}:rtp{dst=0.0.0.0,port=" + port + ",sdp=rtsp://0.0.0.0:" + port + "/}'");
 }
 
+/**
+ * Publish the audio from the monitor of the given sink to port 8090 of the local VM with HTTP protocol using ffserver
+ * @param sink_name the name of the sink whose monitor should be published
+ * @returns {*} the ChildProcess representing the publishing process
+ */
+function publish_audio_http(sink_name) {
+	log("Publishing sink "+sink_name+" to HTTP port 8090");
+	return exec("ffserver -f ffserver.conf; parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
+		"avconv -f s16le -ac 1 -ar 44100 -i - http://localhost:8090/feed1.ffm");
+}
+
 
 /**
  * Execute initial bootup sequence: set up null sink, set default sink to the null sink, and publish null sink's monitor
@@ -215,7 +226,6 @@ function publish_audio_rtsp(sink_name, port) {
  */
 function initial_bootup(callback) {
 	log("Executing initial bootup sequence");
-	var port = config.external.rtsp_publish_port;
 	var sink_name = config.external.audio_sink_name;
 	async.series([
 		function (cb) {
@@ -225,7 +235,7 @@ function initial_bootup(callback) {
 			redirectAudio(sink_name, cb);
 		},
 		function (cb) {
-			cb(null, publish_audio_rtsp(sink_name, port));
+			cb(null, publish_audio_http(sink_name));
 		}
 	], function (err, result) {
 		if (err) {

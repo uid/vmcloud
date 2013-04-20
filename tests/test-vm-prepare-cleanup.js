@@ -5,6 +5,7 @@ var config = require('../configurator.js');
 var exec = require('child_process').exec;
 var VMStates = require('../common.js').VMStates;
 var should = require('should');
+process.chdir(__dirname+"/..");
 
 var rpcImpl;
 

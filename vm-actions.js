@@ -183,6 +183,17 @@ function redirectAudio(sink_name, callback) {
 					cb('pacmd set-default-sink returns code ' + code, null);
 				}
 			})
+		},
+		function (cb) {
+			log("setting default source");
+			var proc = spawn_dbg('pacmd', ['set-default-source', sink_name + ".monitor"]);
+			proc.on('exit', function (code) {
+				if (code == 0) {
+					cb(null, null);
+				} else {
+					cb('pacmd set-default-source returns code ' + code, null);
+				}
+			})
 		}
 
 	], function (err, results) {
@@ -214,9 +225,12 @@ function publish_audio_rtsp(sink_name, port) {
  */
 function publish_audio_http(sink_name) {
 	log("Publishing sink "+sink_name+" to HTTP port 8090");
-	return exec("ffserver -f ffserver.conf; parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
-		"avconv -f s16le -ac 1 -ar 44100 -i - http://localhost:8090/feed1.ffm");
+	/*return exec("ffserver -f ffserver.conf; parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
+		"avconv -f s16le -ac 1 -ar 44100 -i - http://localhost:8090/feed1.ffm");*/
+	return exec_dbg('darkice -c scripts/darkice.conf');
 }
+
+
 
 
 /**

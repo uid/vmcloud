@@ -4,9 +4,12 @@
 <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
 <script src="vmcloud.js"></script>
 <script>
+    var ip = null;
+    var vnc_port = 5910;
     var endpoint = null;
     $(document).ready(function() {
         $("#control-ok").click(function() {
+            ip = $('#control-ip').val();
             endpoint = "http://"+$('#control-ip').val()+":"+$('#control-port').val()+"/";
             $("#config-panel").hide();
             $("#control-panel").show();
@@ -22,11 +25,36 @@
                     vmData.sort(function(x,y){return x.id - y.id;});
                     for (var i=0;i<vmData.length;i++) {
                         var vm = vmData[i];
+                        var remote = $("<td>");
                         var tr = $("<tr>")
                                 .append($("<td>").text(vm.id))
                                 .append($("<td>").text(BeliefState.name(vm.state.state)))
-                                .append($("<td>").text(vm.server && vm.server.public_ip?vm.public_ip:"None"))
-                                .append($("<td>").text(vm.vnc_passwd?vm.vnc_passwd:"None"));
+                                .append($("<td>").text(vm.server && vm.server.public_ip?vm.server.public_ip:"None"))
+                                .append($("<td>").text(vm.vnc_passwd?vm.vnc_passwd:"None"))
+                                .append(remote);
+                        if (vm.server && vm.server.public_ip && vm.vnc_passwd) {
+                            (function (vncpass, ip) {
+                                remote.append($("<button>").click(function () {
+                                    $("#vnc").empty();
+                                    $("#vnc").flash({
+                                        src: 'Flashlight.swf',
+                                        width:1024,
+                                        height:768,
+                                        flashvars: {
+                                            hideControls: true,
+                                            autoConnect: true,
+                                            viewOnly: false,
+                                            host: ip,
+                                            port: vnc_port,
+                                            securityPort: 843,
+                                            useSecurity: true,
+                                            password: vncpass,
+                                            jpegCompression: 7
+                                        }
+                                    });
+                                }));
+                            })(vm.vnc_passwd, vm.server.public_ip);
+                        }
                         table.find("tbody").append(tr);
                     }
                 }, 'json');
@@ -74,6 +102,7 @@
         <td>-- State --</td>
         <td>-- Public IP --</td>
         <td>-- VNC password --</td>
+        <td>-- Remote --</td>
     </tr>
     </thead>
     <tbody>
@@ -82,6 +111,7 @@
 </table>
 </div>
 
+<div id="vnc"></div>
 
 </body>
 </html>

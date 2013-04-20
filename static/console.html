@@ -20,7 +20,7 @@
                     }
                     vmData.sort(function(x,y){return x.id - y.id;});
                     for (var i=0;i<vmData.length;i++) {
-                        var vm = json[i];
+                        var vm = vmData[i];
                         var tr = $("<tr>")
                                 .append($("<td>").text(vm.id))
                                 .append($("<td>").text(vm.status))

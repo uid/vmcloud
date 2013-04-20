@@ -56,7 +56,7 @@
                                         }
                                     });
                                     $("#audio").empty();
-                                    $("#audio").audioPlayer("http://"+ip+":8090/feed1.mp3");
+                                    $("#audio").audioPlayer("http://"+ip+":8000/stream.mp3");
                                 }));
                             })(vm.vnc_passwd, vm.server.public_ip);
                         }
@@ -118,8 +118,5 @@
 
 <div id="vnc"></div>
 <div id="audio"></div>
-<audio control="">
-    <source src="http://192.168.225.138:8091/feed1.mp3" type="audio/mpeg">
-</audio>
 </body>
 </html>

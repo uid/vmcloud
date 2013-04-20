@@ -340,7 +340,7 @@ function runControlServer() {
 		res.send(JSON.stringify(vmData));
 	});
 
-	app.use('/static', express.static(__dirname+'/public'));
+	app.use('/static', express.static(__dirname+'/static'));
 
 
 	log("Authenticating into OpenStack and getting parameters...");

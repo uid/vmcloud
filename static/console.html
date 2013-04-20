@@ -5,12 +5,10 @@
 <script src="vmcloud.js"></script>
 <script src="flash.js"></script>
 <script>
-    var ip = null;
     var vnc_port = 5910;
     var endpoint = null;
     $(document).ready(function() {
         $("#control-ok").click(function() {
-            ip = $('#control-ip').val();
             endpoint = "http://"+$('#control-ip').val()+":"+$('#control-port').val()+"/";
             $("#config-panel").hide();
             $("#control-panel").show();

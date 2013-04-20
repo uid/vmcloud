@@ -121,6 +121,16 @@ function getRPCImpl() {
 	};
 }
 
+function runFlashPolicyServer() {
+	var flash_policy_app = express();
+	flash_policy_app.get('*', function(req, res) {
+		log("Received request for flash policy");
+		res.header('Content-Type', 'application/xml');
+		res.send(fs.readFileSync('static/flashpolicy.xml', {encoding:'utf8'}));
+	});
+	flash_policy_app.listen(843);
+}
+
 function runRpcServer() {
 	var rpc_server = new rpcEngine(getRPCImpl());
 	rpc_server.listen(config.vm.interface_port);
@@ -136,6 +146,7 @@ function runVMInterface() {
 		} else {
 			runRpcServer();
 			runFirefoxPluginListenerServer();
+			runFlashPolicyServer();
 			vmState = VMStates.FREE;
 			vmCheckIn(function () {
 			});

@@ -342,14 +342,6 @@ function runControlServer() {
 
 	app.use('/static', express.static(__dirname+'/static'));
 
-
-	var flash_policy_app = express();
-	flash_policy_app.get('*', function(req, res) {
-		log("Received request for flash policy");
-		res.header('Content-Type', 'application/xml');
-		res.send(fs.readSync('static/flashpolicy.xml', {encoding:'utf8'}));
-	});
-
 	log("Authenticating into OpenStack and getting parameters...");
 	// prepare openstack
 	openstack.getOpenStackController(function (controller) {
@@ -370,9 +362,6 @@ function runControlServer() {
 
 		app.listen(config.control.external_port);
 		log("External web server started on port " + config.control.external_port);
-
-		flash_policy_app.listen(843);
-		log("Flash policy server started on port 843");
 	});
 }
 

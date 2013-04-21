@@ -22,7 +22,7 @@
 
     <authentication>
         <!-- Sources log in with username 'source' -->
-        <source-password>T@#*(FHE$(f32</source-password>
+        <source-password>123456</source-password>
         <!-- Relays log in username 'relay' -->
         <relay-password>GSW*(U)HYR$)EW</relay-password>
 

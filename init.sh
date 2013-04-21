@@ -15,6 +15,6 @@ chown -R vmuser:vmuser /var/vmcloud
 grep session-setup-script /etc/lightdm/lightdm.conf || echo "session-setup-script=sudo -u vmuser sh /var/vmcloud/bootstrap-vm.sh" >> /etc/lightdm/lightdm.conf
 
 cp scripts/icecast.xml /etc/icecast2/icecast.xml
-cp scripts/darkice2 /etc/default/icecast2
+cp scripts/icecast2 /etc/default/icecast2
 
 sync

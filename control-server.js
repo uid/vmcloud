@@ -35,7 +35,9 @@ function verState(vmid, state) {
 			var oldState = this.state;
 			this.state = newState;
 			this.version++;
-			vlog("VM #" + vmid + " belief state transition: " + BeliefState.name(oldState) + " -> " + BeliefState.name(newState));
+			if (oldState != newState) {
+				vlog("VM #" + vmid + " belief state transition: " + BeliefState.name(oldState) + " -> " + BeliefState.name(newState));
+			}
 			return this.version;
 		},
 		verSet: function (ver, newState) {
@@ -56,7 +58,8 @@ function bootNewVM() {
 		vmData[vmid].server = server;
 		vmData[vmid].state.verSet(0, BeliefState.BOOTING);
 		log("Successfully booted: " + vmid + ", OpenStack instance id = " + server.id
-			+ ", server info: " + JSON.stringify(server));
+			/*+ ", server info: " + JSON.stringify(server)*/
+		);
 	});
 }
 
@@ -200,7 +203,7 @@ function getVMWatchdog() {
 function updateInstanceInfoFromOpenStack(vmid, callback) {
 	var vm = vmData[vmid];
 	openstackController.getServer(vm.server.id, function (server) {
-		vlog("VM #" + vmid + " info updated: " + JSON.stringify(server));
+		//vlog("VM #" + vmid + " info updated: " + JSON.stringify(server));
 		vm.server = server;
 		callback();
 	});

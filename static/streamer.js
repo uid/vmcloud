@@ -1,6 +1,6 @@
 (function($) {
 
-$.fn.audioPlayer = function(audioUrl) {
+$.fn.streamer = function(audioUrl) {
   this.empty();
   this.flash({
     src: "streamer.swf",

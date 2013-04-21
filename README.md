@@ -4,6 +4,7 @@ vmcloud
 VM Cloud with OpenStack for FlightCrew backend.
 
 The VM Cloud is a system that manages a pool of virtual machines, each running a web browser. It serves two purposes:
+
 1. To allow a crowd worker to use a web browser within their web browser by remoting (VNC + audio forwarding) into a virtual machine. This allows us to capture the pages they visit while retaining the full functionality of a web browser. In addition we have control over the web browser such as pre-configuring it with a cookie.
 2. To capture the audio output of the web browser so that it can be relayed to the end user's device (for FlightCrew Tuner).
 

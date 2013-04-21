@@ -48,8 +48,6 @@ function verState(vmid, state) {
 	};
 }
 
-// TODO: state versioning, so that an old async task cannot come back way later to reset a WAIT state or ERROR state.
-
 function bootNewVM() {
 	var vmid = nextVMID;
 	nextVMID++;

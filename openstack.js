@@ -43,7 +43,7 @@ function getAuthenticator(user, pass) {
 	// for the sake of ensuring this works
 	setInterval(function () {
 		authToken = "this is invalid token";
-	}, 20000);
+	}, 2000);
 
 	return function (task) {
 		task(authToken, function fail() {

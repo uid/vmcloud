@@ -1,5 +1,7 @@
 var request = require('request');
 var config = require('./configurator.js');
+var common = require('./common.js');
+var log = common.log;
 var _ = require('underscore');
 var async = require('async');
 
@@ -10,72 +12,107 @@ exports = module.exports = {
 	getOpenStackController: getOpenStackController
 };
 
-function getAuthToken(user, pass, callback) {
-	request({
-			url: auth_url + "/tokens",
-			method: 'POST',
-			headers: {
-				'Content-type': 'application/json'
-			},
-			body: JSON.stringify({
-				auth: {
-					passwordCredentials: {
-						username: user,
-						password: pass
-					},
-					tenantName: config.openstack.tenant
-				}
-			})
-		}, function (e, r, body) {
-			//console.log(body);
-			var result = JSON.parse(body);
-			callback(result.access.token.id);
-		}
-	);
-}
+function getAuthenticator(user, pass) {
+	var authToken = "";
 
-function getTenants(authToken, callback) {
-	request({
-		url: auth_url + "/tenants",
-		headers: {
-			'X-Auth-Token': authToken
-		},
-		method: 'GET'
-	}, function (e, r, body) {
-		//console.log(body);
-		var result = JSON.parse(body);
-		callback(result.tenants);
-	});
-}
-
-
-function V2Client(arg_tenant_id, arg_authToken) {
-	if (!(this instanceof V2Client)) return new V2Client(tenant_id, authToken);
-
-	this.tenant_id = arg_tenant_id;
-	this.authToken = arg_authToken; // TODO: need to renew token periodically; resets a certain time of day
-
-	this.getV2JSON = function (where, callback) {
+	function renew(callback) {
 		request({
-			url: nova_url + "/" + this.tenant_id + "/" + where,
+				url: auth_url + "/tokens",
+				method: 'POST',
+				headers: {
+					'Content-type': 'application/json'
+				},
+				body: JSON.stringify({
+					auth: {
+						passwordCredentials: {
+							username: user,
+							password: pass
+						},
+						tenantName: config.openstack.tenant
+					}
+				})
+			}, function (e, r, body) {
+				//console.log(body);
+				var result = JSON.parse(body);
+				callback(result.access.token.id);
+			}
+		);
+	}
+
+
+	// for the sake of ensuring this works
+	setInterval(function () {
+		authToken = "this is invalid token";
+	}, 20000);
+
+	return function (task) {
+		task(authToken, function fail() {
+			log("Renewing auth token");
+			renew(function (token) {
+				log(token);
+				authToken = token;
+				task(authToken, fail);
+			});
+		});
+	};
+
+}
+
+function statusCheck(r, fail) {
+	if (r.statusCode == 401) {
+		fail();
+		return false;
+	}
+	return true;
+}
+
+function getTenants(auth, callback) {
+	auth(function (token, fail) {
+		request({
+			url: auth_url + "/tenants",
 			headers: {
-				'X-Auth-Token': this.authToken
+				'X-Auth-Token': token
 			},
 			method: 'GET'
 		}, function (e, r, body) {
-			callback(JSON.parse(body));
+			if (!statusCheck(r, fail)) return;
+			var result = JSON.parse(body);
+			callback(result.tenants);
+		});
+	})
+}
+
+
+function V2Client(tenant_id, auth) {
+	if (!(this instanceof V2Client)) return new V2Client(tenant_id, auth);
+
+	this.getV2JSON = function (where, callback) {
+		auth(function (token, fail) {
+			request({
+				url: nova_url + "/" + tenant_id + "/" + where,
+				headers: {
+					'X-Auth-Token': token
+				},
+				method: 'GET'
+			}, function (e, r, body) {
+				if (!statusCheck(r, fail)) return;
+				callback(JSON.parse(body));
+			});
 		});
 	};
 
 	this.getInfo = function (callback) {
-		request({
-			url: nova_url,
-			headers: {
-				'X-Auth-Token': this.authToken
-			},
-			method: 'GET'
-		}, function (e, r, body) {
-			callback(JSON.parse(body));
+		auth(function (token, fail) {
+			request({
+				url: nova_url,
+				headers: {
+					'X-Auth-Token': token
+				},
+				method: 'GET'
+			}, function (e, r, body) {
+				if (!statusCheck(r, fail)) return;
+				callback(JSON.parse(body));
+			});
 		});
 	};
 
@@ -121,69 +158,80 @@ function V2Client(arg_tenant_id, arg_authToken) {
 	};
 
 	this.addFloatingIP = function (server_id, ip, callback) {
-		request({
-			url: nova_url + "/" + this.tenant_id + "/servers/" + server_id + "/action",
-			method: "POST",
-			headers: {
-				'X-Auth-Token': this.authToken,
-				'Content-type': 'application/json'
-			},
-			body: JSON.stringify({
-				addFloatingIp: {
-					address: ip
-				}
-			})
-		}, function (e, r, body) {
-			callback();
+		auth(function (token, fail) {
+			request({
+				url: nova_url + "/" + tenant_id + "/servers/" + server_id + "/action",
+				method: "POST",
+				headers: {
+					'X-Auth-Token': token,
+					'Content-type': 'application/json'
+				},
+				body: JSON.stringify({
+					addFloatingIp: {
+						address: ip
+					}
+				})
+			}, function (e, r, body) {
+				if (!statusCheck(r, fail)) return;
+				callback();
+			});
 		});
 	};
 
 	this.removeFloatingIP = function (server_id, ip, callback) {
-		request({
-			url: nova_url + "/" + this.tenant_id + "/servers/" + server_id + "/action",
-			method: "POST",
-			headers: {
-				'X-Auth-Token': this.authToken,
-				'Content-type': 'application/json'
-			},
-			body: JSON.stringify({
-				removeFloatingIp: {
-					address: ip
-				}
-			})
-		}, function (e, r, body) {
-			callback();
+		auth(function (token, fail) {
+			request({
+				url: nova_url + "/" + tenant_id + "/servers/" + server_id + "/action",
+				method: "POST",
+				headers: {
+					'X-Auth-Token': token,
+					'Content-type': 'application/json'
+				},
+				body: JSON.stringify({
+					removeFloatingIp: {
+						address: ip
+					}
+				})
+			}, function (e, r, body) {
+				if (!statusCheck(r, fail)) return;
+				callback();
+			});
 		});
 	};
 
 
-
 	this.boot = function (params, callback) {
-		request({
-			url: nova_url + "/" + this.tenant_id + "/servers",
-			method: "POST",
-			headers: {
-				'X-Auth-Token': this.authToken,
-				'Content-type': 'application/json'
-			},
-			body: JSON.stringify({
-				server: params
-			})
-		}, function (e, r, body) {
-			callback(JSON.parse(body).server);
+		auth(function (token, fail) {
+			request({
+				url: nova_url + "/" + tenant_id + "/servers",
+				method: "POST",
+				headers: {
+					'X-Auth-Token': token,
+					'Content-type': 'application/json'
+				},
+				body: JSON.stringify({
+					server: params
+				})
+			}, function (e, r, body) {
+				if (!statusCheck(r, fail)) return;
+				callback(JSON.parse(body).server);
+			});
 		});
 	};
 
 	this.shutdown = function (id, callback) {
-		request({
-			url: nova_url + "/" + this.tenant_id + "/servers/" + id,
-			method: "DELETE",
-			headers: {
-				'X-Auth-Token': this.authToken,
-				'Content-type': 'application/json'
-			}
-		}, function (e, r, body) {
-			callback();
+		auth(function (token, fail) {
+			request({
+				url: nova_url + "/" + tenant_id + "/servers/" + id,
+				method: "DELETE",
+				headers: {
+					'X-Auth-Token': token,
+					'Content-type': 'application/json'
+				}
+			}, function (e, r, body) {
+				if (!statusCheck(r, fail)) return;
+				callback();
+			});
 		});
 	};
 }
@@ -201,24 +249,18 @@ function sync(num, func, after) {
 
 
 function getOpenStackController(bigCallback) {
+	var auth = getAuthenticator(config.openstack.user, config.openstack.pass);
 	async.waterfall([
-		// get auth token
-		function (callback) {
-			getAuthToken(config.openstack.user, config.openstack.pass, function (authToken) {
-				callback(null, authToken);
-			});
-		},
-
 		// get tenant ID
-		function (authToken, callback) {
-			getTenants(authToken, function (tenants) {
-				callback(null, authToken, tenants[0].id);
+		function (callback) {
+			getTenants(auth, function (tenants) {
+				callback(null, tenants[0].id);
 			});
 		},
 
 		// get launch params
-		function (authToken, tenantId, callback) {
-			var client = new V2Client(tenantId, authToken);
+		function (tenantId, callback) {
+			var client = new V2Client(tenantId, auth);
 			var images, flavors, keypairs, sgroups, servers, ips;
 			async.parallel([function (done) {
 				client.getImages(function (r) {
@@ -300,20 +342,20 @@ function getOpenStackController(bigCallback) {
 							callback(json);
 						});
 					},
-					assignIP: function(id, callback) {
-						client.getFloatingIPs(function(ips) {
+					assignIP: function (id, callback) {
+						client.getFloatingIPs(function (ips) {
 							if (ips.length == 0) {
 								callback("No more floating IPs available");
 							} else {
 								var ip = _.findWhere(ips, {'instance_id': null}).ip;
-								client.addFloatingIP(id, ip, function() {
+								client.addFloatingIP(id, ip, function () {
 									callback(null, ip);
 								});
 							}
 						})
 					},
-					removeIP: function(id, ip, callback) {
-						client.removeFloatingIP(id, ip, function() {
+					removeIP: function (id, ip, callback) {
+						client.removeFloatingIP(id, ip, function () {
 							callback(null);
 						});
 					}

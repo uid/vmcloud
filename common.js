@@ -1,5 +1,4 @@
 var config = require('./configurator.js');
-var rpc = require('./rpc.js');
 
 Object.defineProperty(global, '__stack', {
 	get: function () {

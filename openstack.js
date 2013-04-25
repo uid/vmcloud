@@ -43,7 +43,7 @@ function getAuthenticator(user, pass) {
 	// for the sake of ensuring this works
 	setInterval(function () {
 		authToken = "123456789";
-	}, 2000);
+	}, 20000);
 
 	return function (task) {
 		task(authToken, function fail() {
@@ -95,7 +95,6 @@ function V2Client(tenant_id, auth) {
 				},
 				method: 'GET'
 			}, function (e, r, body) {
-				log(body);
 				if (!statusCheck(r, fail)) return;
 				callback(JSON.parse(body));
 			});

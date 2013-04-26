@@ -29,7 +29,9 @@ module.exports = exports = {
 		security_group: 'vmcloud',
 		image_name: 'vmcloud-vm',
 		flavor_name: 'medium',
-		instance_name_prefix: "cloud-vm-instance"
+		instance_name_prefix: "cloud-vm-instance",
+
+		access_with_public_ip: true
 	},
 
 	control: {

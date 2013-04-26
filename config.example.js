@@ -31,7 +31,7 @@ module.exports = exports = {
 		flavor_name: 'medium',
 		instance_name_prefix: "cloud-vm-instance",
 
-		access_with_public_ip: true
+		private_ip_index: 1
 	},
 
 	control: {

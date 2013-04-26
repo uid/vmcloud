@@ -215,8 +215,7 @@ function runControlServer() {
 			var ver = vm.state.set(BeliefState.WAIT);
 			updateInstanceInfoFromOpenStack(vmid, function () {
 				vm.state.verSet(ver, BeliefState.FREE);
-				var ip = config.openstack.access_with_public_ip?vm.server.addresses.public[0].addr
-					: vm.server.addresses.private[0].addr;
+				var ip = vm.server.addresses.private[config.openstack.private_ip_index].addr;
 				rpc[vmid] = rpcBuilder.rpcInterface(ip, config.vm.interface_port,
 					vmRPCInterface); // TODO: multiple addresses possible?
 				callback();

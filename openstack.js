@@ -26,7 +26,7 @@ function getAuthenticator(user, pass) {
 					auth: config.openstack.credentials
 				})
 			}, function (e, r, body) {
-				//console.log(body);
+				console.log(body);
 				var result = JSON.parse(body);
 				callback(result.access.token.id);
 			}
@@ -53,7 +53,7 @@ function getAuthenticator(user, pass) {
 }
 
 function statusCheck(r, fail) {
-	if (r.statusCode == 401) {
+	if (r.statusCode == 401 || r.statusCode == 403) {
 		fail();
 		return false;
 	}
@@ -89,6 +89,7 @@ function V2Client(tenant_id, auth) {
 				},
 				method: 'GET'
 			}, function (e, r, body) {
+				log(body);
 				if (!statusCheck(r, fail)) return;
 				callback(JSON.parse(body));
 			});

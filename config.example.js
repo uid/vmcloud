@@ -16,6 +16,7 @@ module.exports = exports = {
 				accessKey: 'accesskeyhere',
 				secretKey: 'secretkeyhere'
 			},
+			tenantId: '123123123123'
 		},*/
 
 

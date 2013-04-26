@@ -43,7 +43,6 @@ function getAuthenticator(user, pass) {
 		task(authToken, function fail() {
 			log("Renewing auth token");
 			renew(function (token) {
-				log(token);
 				authToken = token;
 				task(authToken, fail);
 			});
@@ -89,7 +88,6 @@ function V2Client(tenant_id, auth) {
 				},
 				method: 'GET'
 			}, function (e, r, body) {
-				log(body);
 				if (!statusCheck(r, fail)) return;
 				callback(JSON.parse(body));
 			});

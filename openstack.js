@@ -26,18 +26,12 @@ function getAuthenticator(user, pass) {
 					auth: config.openstack.credentials
 				})
 			}, function (e, r, body) {
-				console.log(body);
 				var result = JSON.parse(body);
 				callback(result.access.token.id);
 			}
 		);
 	}
 
-
-	// for the sake of ensuring this works
-	setInterval(function () {
-		authToken = "123456789";
-	}, 20000);
 
 	return function (task) {
 		task(authToken, function fail() {

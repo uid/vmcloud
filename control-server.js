@@ -215,8 +215,8 @@ function runControlServer() {
 			var ver = vm.state.set(BeliefState.WAIT);
 			updateInstanceInfoFromOpenStack(vmid, function () {
 				vm.state.verSet(ver, BeliefState.FREE);
-				var ip = vm.server.addresses.private[config.openstack.private_ip_index].addr;
-				rpc[vmid] = rpcBuilder.rpcInterface(ip, config.vm.interface_port,
+				vm.ip = vm.server.addresses.private[config.openstack.private_ip_index].addr;
+				rpc[vmid] = rpcBuilder.rpcInterface(vm.ip, config.vm.interface_port,
 					vmRPCInterface); // TODO: multiple addresses possible?
 				callback();
 			});
@@ -278,14 +278,19 @@ function runControlServer() {
 							cb(null, result);
 						});
 					}, function (cb) {
-						openstackController.assignIP(vm.server.id, function(err, ip) {
-							if (err) {
-								cb(err);
-							} else {
-								vm.server.public_ip = ip;
-								cb(null);
-							}
-						});
+						if (config.openstack.use_floating_ip) {
+							openstackController.assignIP(vm.server.id, function(err, ip) {
+								if (err) {
+									cb(err);
+								} else {
+									vm.server.public_ip = ip;
+									cb(null);
+								}
+							});
+						} else {
+							vm.server.public_ip = vm.ip;
+							cb(null);
+						}
 					}], function (err, result) {
 						if (err) {
 							vm.state.verSet(ver, BeliefState.ERROR);
@@ -314,14 +319,19 @@ function runControlServer() {
 						cb(null, result);
 					});
 				}, function(cb) {
-					openstackController.removeIP(vm.server.id, vm.server.public_ip, function(err) {
-						if (err) {
-							cb(err);
-						} else {
-							delete vm.server.public_ip;
-							cb(null);
-						}
-					});
+					if (config.openstack.use_floating_ip) {
+						openstackController.removeIP(vm.server.id, vm.server.public_ip, function (err) {
+							if (err) {
+								cb(err);
+							} else {
+								delete vm.server.public_ip;
+								cb(null);
+							}
+						});
+					} else {
+						delete vm.server.public_ip;
+						cb(null);
+					}
 				}], function(err, result) {
 					if (err) {
 						vm.state.verSet(ver, BeliefState.ERROR);

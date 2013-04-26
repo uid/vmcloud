@@ -2,16 +2,26 @@ module.exports = exports = {
 	// Open stack configurations
 	openstack: {
 		// credentials
-		user: 'openstackuser',
-		pass: 'openstackpassword',
+		credentials: {
+			passwordCredentials: {
+				username: 'openstackuser',
+				password: 'openstackpassword'
+			},
+			tenantName: "tenant"
+		},
+
+		// OR
+		/*credentials: {
+			apiAccessKeyCredentials: {
+				accessKey: 'accesskeyhere',
+				secretKey: 'secretkeyhere'
+			},
+		},*/
+
 
 		// OpenStack server IP
-		server: '123.123.123.123',
-		auth_port: 35357,
-		compute_port: 80,
-
-		// the tenant name
-		tenant: 'project1',
+		auth_url: 'http://123.123.123.123:5000/v2.0',
+		compute_url: 'http://123.123.123.123:8774/v2',
 
 		// Boot parameters
 		keypair: 'vmcloud',

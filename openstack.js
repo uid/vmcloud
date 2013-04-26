@@ -5,8 +5,8 @@ var log = common.log;
 var _ = require('underscore');
 var async = require('async');
 
-var auth_url = "http://" + config.openstack.server + ":5000/v2.0";
-var nova_url = "http://" + config.openstack.server + ":8774/v2";
+var auth_url = config.openstack.auth_url;
+var nova_url = config.openstack.compute_url;
 
 exports = module.exports = {
 	getOpenStackController: getOpenStackController
@@ -23,13 +23,7 @@ function getAuthenticator(user, pass) {
 					'Content-type': 'application/json'
 				},
 				body: JSON.stringify({
-					auth: {
-						passwordCredentials: {
-							username: user,
-							password: pass
-						},
-						tenantName: config.openstack.tenant
-					}
+					auth: config.openstack.credentials
 				})
 			}, function (e, r, body) {
 				//console.log(body);

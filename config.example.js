@@ -7,6 +7,8 @@ module.exports = exports = {
 
 		// OpenStack server IP
 		server: '123.123.123.123',
+		auth_port: 35357,
+		compute_port: 80,
 
 		// the tenant name
 		tenant: 'project1',

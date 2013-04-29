@@ -35,6 +35,22 @@ function log(msg) {
 	}
 }
 
+function assert(val) {
+	if (!val) {
+		var frame = __stack[1];
+		var line = frame.getLineNumber();
+		var file = frame.getFileName();
+		var logmsg = "ASSERT FAIL!!! [" + file + ":" + line + "]";
+		if (config.isControl) {
+			// TODO: log to file!
+			console.log(logmsg);
+		} else {
+			config.rpcInterface.log(config.vmid, logmsg, function () {
+			});
+		}
+	}
+}
+
 function dlog(msg) {
 	// TODO: log to file!
 	console.log(msg);
@@ -67,8 +83,9 @@ var BeliefState = {
 	READY: 4,
 	OCCUPIED: 5,
 	ERROR: 6,
+	KILLING: 7,
 	name: function (val) {
-		return ['CREATING', 'BOOTING', 'WAIT', 'FREE', 'READY', 'OCCUPIED', 'ERROR'][val];
+		return ['CREATING', 'BOOTING', 'WAIT', 'FREE', 'READY', 'OCCUPIED', 'ERROR', 'KILLING'][val];
 	}
 };
 
@@ -78,6 +95,7 @@ exports = module.exports = {
 	log: log,
 	vlog: vlog,
 	dlog: dlog,
+	assert: assert,
 	VMStates: VMStates,
 	BeliefState: BeliefState
 };

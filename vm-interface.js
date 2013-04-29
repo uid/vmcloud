@@ -74,9 +74,7 @@ var sessionPayload;
 function getRPCImpl() {
 	return {
 		ping: function (callback) {
-			callback({
-				state: vmState
-			});
+			callback(vmState != VMStates.ERROR);
 		},
 
 		prepare: function (data, callback) {

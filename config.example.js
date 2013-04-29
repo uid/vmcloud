@@ -42,9 +42,12 @@ module.exports = exports = {
 
 		external_port: 8080,
 
-		// time (milliseconds) to kill VM if VM hasn't responded for this long
-		watchdog_timeout: 20*1000,
-		watchdog_bootup_timeout: 4*60*1000 // time to kill VM if it does not finish booting within this long
+		timeout_openstack: 10 * 1000, // Max. time for openstack to respond
+		timeout_boot: 4 * 60 * 1000, // Max. time to boot
+		timeout_update: 20 * 1000, // Max. time for VM to respond to periodic ping
+		timeout_operation: 30 * 1000, // Max. time for VM to complete a prepare/cleanup operation
+
+		ping_interval: 5 * 1000, // Ping interval
 	},
 
 	vm: {

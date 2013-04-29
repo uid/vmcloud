@@ -3,16 +3,20 @@ module.exports = exports = {
 	isControl: null,
 	vmid: null,
 	rpcInterface: null,
+	cloudController: null,
+	rpcFactory: null,
 	testing: function () {
 		this.isTesting = true;
 	},
-	initControl: function () {
+	initControl: function (cloudController, rpcFactory) {
 		var config = require('./config.js');
 		this.openstack = config.openstack;
 		this.control = config.control;
 		this.vm = config.vm;
 		this.external = config.external;
 		this.isControl = true;
+		this.cloudController = cloudController;
+		this.rpcFactory = rpcFactory;
 	},
 	initInstance: function (vmid, rpcInterface, callback) {
 		this.vmid = vmid;

@@ -303,7 +303,7 @@ function getOpenStackController(bigCallback) {
 					return lines.join('\n');
 				}
 
-				bigCallback({
+				var controller = {
 					client: client, // for debugging purposes
 					boot: function (vmid, callback) {
 						client.boot({
@@ -330,23 +330,37 @@ function getOpenStackController(bigCallback) {
 						});
 					},
 					assignIP: function (id, callback) {
-						client.getFloatingIPs(function (ips) {
-							if (ips.length == 0) {
-								callback("No more floating IPs available");
-							} else {
-								var ip = _.findWhere(ips, {'instance_id': null}).ip;
-								client.addFloatingIP(id, ip, function () {
-									callback(null, ip);
-								});
-							}
-						})
+						if (config.openstack.use_floating_ip) {
+							client.getFloatingIPs(function (ips) {
+								if (ips.length == 0) {
+									callback("No more floating IPs available");
+								} else {
+									var ip = _.findWhere(ips, {'instance_id': null}).ip;
+									client.addFloatingIP(id, ip, function () {
+										callback(null, ip);
+									});
+								}
+							});
+						} else {
+							this.getServer(id, function(server) {
+								callback(null, controller.getIPFromServer(server));
+							});
+						}
 					},
 					removeIP: function (id, ip, callback) {
-						client.removeFloatingIP(id, ip, function () {
+						if (config.openstack.use_floating_ip) {
+							client.removeFloatingIP(id, ip, function () {
+								callback(null);
+							});
+						} else {
 							callback(null);
-						});
+						}
+					},
+					getIPFromServer: function(server) {
+						return server.addresses.private[config.openstack.private_ip_index].ip;
 					}
-				});
+				};
+				bigCallback(controller);
 
 			});
 			callback(null);

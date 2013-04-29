@@ -1,0 +1,184 @@
+<html>
+<head>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+    <script src="vmcloud.js"></script>
+    <script src="flash.js"></script>
+    <script src="streamer.js"></script>
+    <style>
+        table {
+            border-right: 1px solid gray;
+            border-bottom: 1px solid gray;
+        }
+        td {
+            border-left: 1px solid gray;
+            border-top: 1px solid gray;
+        }
+        td {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+        tr:first-child td {
+            font-weight: bold;
+        }
+
+    </style>
+    <script>
+        function restInterface(title, path, names, command) {
+            var topdiv = $("<div>").css('margin-bottom', '10px');
+            topdiv.append($("<div>").css('clear', 'both').text(title));
+            var div = $("<div>");
+            topdiv.append(div);
+            var commandButton = $("<button>").text(command);
+            var inputs = [];
+            for(var i=0;i<names.length;i++) {
+                var name = names[i];
+                var input = $("<input>").attr('type', 'text').css('margin-right', '10px');
+                inputs.push(input);
+                var label = $("<san>").text(name+":");
+                div.append(label).append(input);
+            }
+            div.append(commandButton);
+            var result = $("<span>");
+            div.append(result);
+            commandButton.click(function() {
+                var url = path;
+                for(var i=0;i<inputs.length;i++) {
+                    url = url.replace('{'+i+'}', inputs[i].val());
+                }
+                $.get(url, function(data) {
+                    result.text("Result: "+data);
+                }, 'text');
+            });
+            return topdiv;
+        }
+
+        function buildTable(table, titles, data) {
+            table.empty();
+            var header = $("<tr>");
+            for( var key in titles) {
+                if (titles[key] instanceof Function) {
+                    header.append($("<td>").text(key));
+                } else {
+                    header.append($("<td>").text(titles[key]));
+                }
+                table.append(header);
+            }
+            for(var i=0;i<data.length;i++) {
+                var datarow = data[i];
+                var row = $("<tr>");
+                for(var key in titles) {
+                    if (titles[key] instanceof Function) {
+                        row.append($("<td>").append(titles[key](datarow)));
+                    } else {
+                        var text = "(None)";
+                        if (key in datarow && datarow[key] != null) {
+                            if (datarow[key] instanceof Array) {
+                                text = datarow[key].join(', ');
+                                if (text == '') text = "(Empty)"
+                            } else if (datarow[key] instanceof Object) {
+                                text = JSON.stringify(datarow[key]);
+                            } else {
+                                if (key == 'state') {
+                                    text = BeliefState.name(datarow[key]);
+                                } else {
+                                    text = datarow[key];
+                                }
+                            }
+                        }
+                        row.append($("<td>").text(text));
+                    }
+                }
+                table.append(row);
+            }
+        }
+
+        $(document).ready(function() {
+            var mouseDown = 0;
+            document.body.onmousedown = function() {
+                ++mouseDown;
+            };
+            document.body.onmouseup = function() {
+                --mouseDown;
+            };
+            [{
+                title: 'Set Pool Size',
+                path: '/set-pool-size/{0}/{1}/{2}',
+                names: ['min # VMs', 'max # VMs', 'linger time'],
+                command: "Set Pool Size"
+            }, {
+                title: 'Batch Preparation',
+                path: '/prepare-batch/{0}/{1}',
+                names: ['# VMs in batch', 'homepage URL'],
+                command: "Prepare Batch"
+            }, {
+                title: "Cancel Batch",
+                path: '/cancel-batch/{0}',
+                names: ['Batch ID'],
+                command: 'Cancel Batch'
+            }, {
+                title: 'Lock VM',
+                path: '/lock/{0}',
+                names: ['Batch ID'],
+                command: 'Lock VM from Batch'
+            }, {
+                title: 'Release VM',
+                path: '/release/{0}',
+                names: ['VM Handle'],
+                command: "Release VM"
+            }].forEach(function(item) {
+                $("#restInterfaces").append(restInterface(item.title, item.path, item.names, item.command));
+            });
+
+            var tables = [];
+            ['Pool Size Settings', 'VMs', 'Batches', 'Preparation Queue', 'Handles', 'Pending Locks'].forEach(function(item) {
+                var enclosing = $("<div>").append($("<p>").text(item)).css('margin-bottom', '10px').css('clear', 'both');
+                var table = $("<table>").attr('cellspacing', 0);
+                tables.push(table);
+                enclosing.append(table);
+                $("#tables").append(enclosing);
+            });
+
+            setInterval(function() {
+                $.get('/all-status', function(json) {
+                    $("#errormsg").hide();
+                    if (mouseDown) return;
+                    buildTable(tables[0], {min: "Min # VMs", max: "Max # VMs", linger: "Linger Time (ms)"}, [json.poolSize]);
+                    buildTable(tables[1], {vmid: "VM ID", state: "State", ip: "IP", public_ip: "Public IP", vnc_passwd: "VNC Password"}, json.vms);
+                    buildTable(tables[2], {id: "Batch ID", size: "Size (#VMs)", data: "Preparation Data", vms: "VM list", Lock: function(item) {
+                        return $("<button>").text('Lock a VM from this batch').click(function() {
+                            $.get('/lock/'+item.id);
+                        });
+                    }}, json.batches);
+                    buildTable(tables[3], {queue: "Queue items"}, [{queue: json.preps}]);
+                    buildTable(tables[4], {handle: "Handle", assigned: "Is Assigned", vmid: "VM ID assigned", Release: function(item) {
+                        return $("<button>").text('Release Handle').click(function() {
+                            $.get('/release/'+item.handle);
+                        });
+                    }}, json.handles);
+                    buildTable(tables[5], {batchId: "Batch ID", handle: "Handle"}, json.pendingLocks);
+                }, 'json').error(function() {
+                    $("#errormsg").show();
+                });
+            }, 100);
+        });
+
+
+
+    </script>
+
+</head>
+<body>
+<div id="restInterfaces">
+
+</div>
+<div id="errormsg" style="font-weight: bold; color: red; display: none">
+    Cannot connect to server!
+</div>
+<div id="tables">
+
+
+</div>
+
+</body>
+</html>

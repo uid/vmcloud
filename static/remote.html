@@ -1,0 +1,52 @@
+<html>
+<head>
+    <script>
+        function getURLParameter(name) {
+            return decodeURI(
+                    (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,null])[1]
+            );
+        }
+    </script>
+    <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+    <script src="http://code.jquery.com/jquery-migrate-1.1.1.min.js"></script>
+    <script src="vmcloud.js"></script>
+    <script src="flash.js"></script>
+    <script src="streamer.js"></script>
+    <script>
+        var vnc_port = 5910;
+        $(document).ready(function() {
+            setTimeout(function check() {
+                $.get('/handle-status/'+getURLParameter('handle'), function(data) {
+                    if (data.assigned) {
+                        $("waitmsg").hide();
+                        $("#vnc").flash({
+                            src: 'Flashlight.swf',
+                            width:1024,
+                            height:768,
+                            flashvars: {
+                                hideControls: true,
+                                autoConnect: true,
+                                viewOnly: false,
+                                host: data.vm.public_ip,
+                                port: vnc_port,
+                                securityPort: 1234,
+                                useSecurity: true,
+                                password: data.vm.vnc_passwd,
+                                jpegCompression: 7
+                            }
+                        });
+                        $("#audio").streamer("http://"+data.vm.public_ip+":8000/stream.mp3");
+                    } else {
+                        setTimeout(check, 1);
+                    }
+                }, 'json');
+            });
+        })
+    </script>
+</head>
+<body>
+    <div id="waitmsg">Waiting for your session to be ready...</div>
+    <div id="vnc"></div>
+    <div id="audio"></div>
+</body>
+</html>

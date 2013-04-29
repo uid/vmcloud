@@ -357,7 +357,7 @@ function getOpenStackController(bigCallback) {
 						}
 					},
 					getIPFromServer: function(server) {
-						return server.addresses.private[config.openstack.private_ip_index].ip;
+						return server.addresses.private[config.openstack.private_ip_index].addr;
 					}
 				};
 				bigCallback(controller);

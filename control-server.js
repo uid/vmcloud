@@ -109,7 +109,7 @@ function VMInfo(vmid) {
 		server: null,
 		ip: null,
 		public_ip: null,
-		vncpasswd: null
+		vnc_passwd: null
 	};
 }
 
@@ -362,7 +362,7 @@ function getVMInfo(vmid) {
 		ip: vm.ip,
 		public_ip: vm.public_ip,
 		//server: vm.server,
-		vncpasswd: vm.vncpasswd
+		vnc_passwd: vm.vnc_passwd
 	};
 }
 

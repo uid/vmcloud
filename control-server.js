@@ -398,9 +398,9 @@ function executeRules() {
 		|| runRule_batchCleanup();
 
 	if (ruleTriggered) {
-		log("VM list: " + JSON.stringify(vmData));
-		log("Prep queue: " + JSON.stringify(prepQueue));
-		log("Batch list: " + JSON.stringify(batchData));
+		//log("VM list: " + JSON.stringify(vmData));
+		//log("Prep queue: " + JSON.stringify(prepQueue));
+		//log("Batch list: " + JSON.stringify(batchData));
 		checkRules();
 	}
 }

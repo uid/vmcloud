@@ -151,7 +151,11 @@
                         });
                     }}, json.batches);
                     buildTable(tables[3], {queue: "Queue items"}, [{queue: json.preps}]);
-                    buildTable(tables[4], {handle: "Handle", assigned: "Is Assigned", vmid: "VM ID assigned", Release: function(item) {
+                    buildTable(tables[4], {handle: "Handle", assigned: "Is Assigned", vmid: "VM ID assigned", Remote: function(item) {
+                        return $("<button>").text('Remote!').click(function() {
+                            window.open('/static/remote.html?handle='+item.handle);
+                        });
+                    }, Release: function(item) {
                         return $("<button>").text('Release Handle').click(function() {
                             $.get('/release/'+item.handle);
                         });

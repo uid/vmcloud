@@ -162,8 +162,10 @@ function runVMInterface() {
 			runFirefoxPluginListenerServer();
 			runFlashPolicyServer();
 			vmState = VMStates.FREE;
-			vmCheckIn(function () {
-			});
+			setTimeout(function() {
+				vmCheckIn(function () {
+				});
+			}, 2000);
 		}
 	});
 

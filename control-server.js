@@ -177,7 +177,7 @@ function prepareVM(vmid, data, callback) {
 	assert(vm.state.get() == BeliefState.FREE);
 	var ver = vm.state.set(BeliefState.WAIT);
 	async.parallel([function (cb) {
-		rpc[vmid].prepare(data, function (result) { // TODO: {profile_name:, homepage:}
+		rpc[vmid].prepare(data, function (result) {
 			vm.vnc_passwd = result.vnc_passwd;
 			cb(null, result);
 		});

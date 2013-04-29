@@ -51,7 +51,7 @@ module.exports = exports = {
 		},
 		prepare: function(data, callback) {
 			setTimeout(function() {
-				callback({vncpasswd: 'mockpasswd', state: VMStates.READY});
+				callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
 			}, 6000);
 		},
 		cleanup: function(data, callback) {

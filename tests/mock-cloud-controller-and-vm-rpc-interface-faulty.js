@@ -62,7 +62,7 @@ module.exports = exports = {
 		prepare: function(data, callback) {
 			setTimeout(function() {
 				coinFlip(0.6, function() {
-					callback({vncpasswd: 'mockpasswd', state: VMStates.READY});
+					callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
 				}, function() {
 					callback({state: VMStates.ERROR});
 				})

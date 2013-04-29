@@ -37,7 +37,7 @@
                         });
                         $("#audio").streamer("http://"+data.vm.public_ip+":8000/stream.mp3");
                     } else {
-                        setTimeout(check, 1);
+                        setTimeout(check, 1000);
                     }
                 }, 'json');
             });

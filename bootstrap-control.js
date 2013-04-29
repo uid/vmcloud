@@ -2,6 +2,7 @@ process.chdir(__dirname);
 var configParams = require('./config.js');
 var config = require('./configurator.js');
 config.openstack = configParams.openstack; // a hack.. otherwise circular dependency
+config.isControl = true; // also a hack
 var openstack = require('./openstack.js');
 var rpcBuilder = require('./rpc-builder.js');
 var vmRPCInterface = require('./rpc-interfaces.js').vmInterface;

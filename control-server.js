@@ -297,7 +297,8 @@ function prepareBatch(batchSize, data) {
 		id: batchId,
 		size: batchSize,
 		data: data,
-		vms: []
+		vms: [],
+		markDelete: false
 	};
 
 	// Add batchSize copies of batchId into preparation queue
@@ -311,8 +312,9 @@ function lockVM(batchId) {
 	var handle = nextHandle;
 	nextHandle++;
 
-	assert(batchData[batchId].size > 0);
-	batchData[batchId].size--;
+	if (batchData[batchId].size > 0) {
+		batchData[batchId].size--;
+	}
 
 	handles.push(handle);
 	handleData[handle] = {
@@ -352,6 +354,7 @@ function releaseVM(handle) {
 
 function cancelBatch(batchId) {
 	batchData[batchId].size = 0;
+	batchData[batchId].markDelete = true;
 }
 
 function getVMInfo(vmid) {
@@ -486,8 +489,7 @@ function runRule_preparation() {
 				var vmid = vms[j];
 				if (!_.contains(pool, vmid) || vmData[vmid].state.get() == BeliefState.ERROR) {
 					vms.removeAt(j);
-					prepQueue.push(batchId);
-					prepQueue.sort();
+					prepQueue.splice(0, 0, batchId);
 					return true;
 				}
 			}
@@ -549,6 +551,8 @@ function runRule_release() {
 	//     Remove #X from the batch
 	//   Otherwise
 	//     Remove VM #X from the batch; clean up #X
+	// Whenever there is a batch #B for which (size of batch #B + #pending locks for #B) is larger than (#VMs in that batch + #occurances of #B in the preparation queue)
+	//   Push #B to the preparation queue
 	for (var i = 0; i < batches.length; i++) {
 		var batchId = batches[i];
 		var batch = batchData[batchId];
@@ -580,6 +584,9 @@ function runRule_release() {
 			vmid = batch.vms.removeAt(0);
 			cleanupVM(vmid);
 			return true;
+		} else if (batch.size + pendingLocksCount > batch.vms.length + occurancesInPrepQueue) {
+			prepQueue.push(batchId);
+			return true;
 		}
 	}
 	return false;
@@ -602,7 +609,7 @@ function runRule_batchCleanup() {
 	for (var i = 0; i < batches.length; i++) {
 		var batchId = batches[i];
 		var batch = batchData[batchId];
-		if (batch.size == 0 && batch.vms.length == 0) {
+		if (batch.markDelete && batch.size == 0 && batch.vms.length == 0) {
 			// extra check: make sure the pending locks list does not contain an item for this batch.
 			// This is because it's possible that the batch is being needed but one of the VMs is still being prepared
 			var lockPending = false;
@@ -697,12 +704,7 @@ function runControlServer() {
 	app.get('/lock/:batchId', function (req, res) {
 		log('Received web request to lock a VM from batch #' + req.params.batchId);
 		var batchId = parseInt(req.params.batchId);
-		if (!_.contains(batches, batchId) || batchData[batchId].size == 0) {
-			log("Invalid params.");
-			res.send('');
-		} else {
-			res.send('' + lockVM(batchId));
-		}
+		res.send('' + lockVM(batchId));
 		res.send('');
 	});
 

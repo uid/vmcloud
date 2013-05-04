@@ -379,7 +379,9 @@ function getHandleInfo(handle) {
 		return {
 			assigned: true,
 			vmid: vmid,
-			vm: getVMInfo(vmid)
+			vm: getVMInfo(vmid),
+			expires: false,
+			expireTime: null
 		};
 	}
 }
@@ -398,7 +400,8 @@ function executeRules() {
 		|| runRule_lock()
 		|| runRule_release()
 		|| runRule_timeout()
-		|| runRule_batchCleanup();
+		|| runRule_batchCleanup()
+		|| runRule_handleExpire();
 
 	if (ruleTriggered) {
 		//log("VM list: " + JSON.stringify(vmData));
@@ -630,6 +633,21 @@ function runRule_batchCleanup() {
 	return false;
 }
 
+function runRule_handleExpire() {
+	var time = Date.now();
+	for (var i=0;i<handles.length;i++) {
+		var handleId = handles[i];
+		var handle = handleData[handleId];
+		if (handle.expires) {
+			if (time > handle.expireTime) {
+				releaseVM(handleId);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 function runRuleMaintainer() {
 	setInterval(checkRules, 1000);
 }
@@ -706,6 +724,20 @@ function runControlServer() {
 		var batchId = parseInt(req.params.batchId);
 		res.send('' + lockVM(batchId));
 		res.send('');
+	});
+
+	app.post('/renew-expire/:handle/:time', function(req, res) {
+		log('Received web request to renew and schedule for expiration handle #'
+			+ req.params.handle + ' after ' + req.params.time + 'ms');
+		var handle = parseInt(req.params.handle);
+		var time = parseInt(req.params.time);
+		if (!_.contains(handles, handle)) {
+			log("Invalid params.");
+			res.send(JSON.stringify({}));
+		} else {
+			handleData[handle].expires = true;
+			handleData[handle].expireTime = Date.now() + time;
+		}
 	});
 
 	app.post('/release/:handle', function (req, res) {

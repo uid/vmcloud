@@ -737,6 +737,7 @@ function runControlServer() {
 		} else {
 			handleData[handle].expires = true;
 			handleData[handle].expireTime = Date.now() + time;
+			res.send(JSON.stringify({}));
 		}
 	});
 

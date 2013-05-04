@@ -156,7 +156,7 @@
                     if (mouseDown) return;
                     buildTable(tables[0], {min: "Min # VMs", max: "Max # VMs", linger: "Linger Time (ms)"}, [json.poolSize]);
                     buildTable(tables[1], {vmid: "VM ID", state: "State", ip: "IP", public_ip: "Public IP", vnc_passwd: "VNC Password"}, json.vms);
-                    buildTable(tables[2], {id: "Batch ID", size: "Size (#VMs)", data: "Preparation Data", vms: "VM list", Lock: function(item) {
+                    buildTable(tables[2], {id: "Batch ID", size: "Size (#VMs)", data: "Preparation Data", vms: "VM list", markDelete: "Marked Delete?", Lock: function(item) {
                         return $("<button>").text('Lock a VM from this batch').click(function() {
                             $.post('/lock/'+item.id, {});
                         });
@@ -166,7 +166,7 @@
                         });
                     }}, json.batches);
                     buildTable(tables[3], {queue: "Queue items"}, [{queue: json.preps}]);
-                    buildTable(tables[4], {handle: "Handle", assigned: "Is Assigned", vmid: "VM ID assigned", Remote: function(item) {
+                    buildTable(tables[4], {handle: "Handle", assigned: "Is Assigned", vmid: "VM ID assigned", expires: "Expires?", expireTime: "Expires in (ms)", Remote: function(item) {
                         return $("<button>").text('Remote!').click(function() {
                             window.open('/static/remote.html?handle='+item.handle);
                         });
@@ -174,7 +174,11 @@
                         return $("<button>").text('Release Handle').click(function() {
                             $.post('/release/'+item.handle, {});
                         });
-                    }}, json.handles);
+                    }}, json.handles.map(function(x) {
+                        var y = JSON.parse(JSON.stringify(x));
+                        y.expireTime = y.expireTime - Date.now();
+                        return y;
+                    }));
                     buildTable(tables[5], {batchId: "Batch ID", handle: "Handle"}, json.pendingLocks);
                 }, 'json').error(function() {
                     $("#errormsg").show();

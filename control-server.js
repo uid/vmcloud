@@ -670,7 +670,7 @@ function runControlServer() {
 		next();
 	});
 
-	app.get('/set-pool-size/:min/:max/:linger', function (req, res) {
+	app.post('/set-pool-size/:min/:max/:linger', function (req, res) {
 		log(util.format('Received web request to set pool Size to (min: %s, max: %s, linger: %s)',
 			req.params.min, req.params.max, req.params.linger));
 
@@ -685,7 +685,7 @@ function runControlServer() {
 		res.send("");
 	});
 
-	app.get('/prepare-batch/:size/:url', function (req, res) {
+	app.post('/prepare-batch/:size/:url', function (req, res) {
 		log('Received web request to set up a batch that point to home page '
 			+ req.params.url + ' with ' + req.params.size + ' number of VMs');
 		var size = parseInt(req.params.size);
@@ -701,14 +701,14 @@ function runControlServer() {
 		}
 	});
 
-	app.get('/lock/:batchId', function (req, res) {
+	app.post('/lock/:batchId', function (req, res) {
 		log('Received web request to lock a VM from batch #' + req.params.batchId);
 		var batchId = parseInt(req.params.batchId);
 		res.send('' + lockVM(batchId));
 		res.send('');
 	});
 
-	app.get('/release/:handle', function (req, res) {
+	app.post('/release/:handle', function (req, res) {
 		log("Received web request to release handle #" + req.params.handle);
 		var handle = parseInt(req.params.handle);
 		if (!_.contains(handles, handle)) {
@@ -730,7 +730,7 @@ function runControlServer() {
 		}
 	});
 
-	app.get('/cancel-batch/:batchId', function (req, res) {
+	app.post('/cancel-batch/:batchId', function (req, res) {
 		log('Received web request to cancel batch #' + req.params.batchId);
 		var batchId = parseInt(req.params.batchId);
 		if (!_.contains(batches, batchId)) {

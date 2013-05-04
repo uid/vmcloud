@@ -24,7 +24,7 @@
 
     </style>
     <script>
-        function restInterface(title, path, names, command) {
+        function restInterface(title, path, method, names, command) {
             var topdiv = $("<div>").css('margin-bottom', '10px');
             topdiv.append($("<div>").css('clear', 'both').text(title));
             var div = $("<div>");
@@ -46,9 +46,15 @@
                 for(var i=0;i<inputs.length;i++) {
                     url = url.replace('{'+i+'}', inputs[i].val());
                 }
-                $.get(url, function(data) {
-                    result.text("Result: "+data);
-                }, 'text');
+                if (method == 'POST') {
+                    $.post(url, {}, function(data) {
+                        result.text("Result: "+data);
+                    }, 'text');
+                } else if (method == 'GET') {
+                    $.get(url, function(data) {
+                        result.text("Result: "+data);
+                    }, 'text');
+                }
             });
             return topdiv;
         }
@@ -104,30 +110,35 @@
             [{
                 title: 'Set Pool Size',
                 path: '/set-pool-size/{0}/{1}/{2}',
+                method: 'POST',
                 names: ['min # VMs', 'max # VMs', 'linger time'],
                 command: "Set Pool Size"
             }, {
                 title: 'Batch Preparation',
                 path: '/prepare-batch/{0}/{1}',
+                method: 'POST',
                 names: ['# VMs in batch', 'homepage URL'],
                 command: "Prepare Batch"
             }, {
                 title: "Cancel Batch",
                 path: '/cancel-batch/{0}',
+                method: 'POST',
                 names: ['Batch ID'],
                 command: 'Cancel Batch'
             }, {
                 title: 'Lock VM',
                 path: '/lock/{0}',
+                method: 'POST',
                 names: ['Batch ID'],
                 command: 'Lock VM from Batch'
             }, {
                 title: 'Release VM',
                 path: '/release/{0}',
+                method: 'POST',
                 names: ['VM Handle'],
                 command: "Release VM"
             }].forEach(function(item) {
-                $("#restInterfaces").append(restInterface(item.title, item.path, item.names, item.command));
+                $("#restInterfaces").append(restInterface(item.title, item.path, item.method, item.names, item.command));
             });
 
             var tables = [];
@@ -147,7 +158,11 @@
                     buildTable(tables[1], {vmid: "VM ID", state: "State", ip: "IP", public_ip: "Public IP", vnc_passwd: "VNC Password"}, json.vms);
                     buildTable(tables[2], {id: "Batch ID", size: "Size (#VMs)", data: "Preparation Data", vms: "VM list", Lock: function(item) {
                         return $("<button>").text('Lock a VM from this batch').click(function() {
-                            $.get('/lock/'+item.id);
+                            $.post('/lock/'+item.id, {});
+                        });
+                    }, Cancel: function(item) {
+                        return $("<button>").text('Cancel batch').click(function() {
+                            $.post('/cancel-batch/'+item.id, {});
                         });
                     }}, json.batches);
                     buildTable(tables[3], {queue: "Queue items"}, [{queue: json.preps}]);
@@ -157,7 +172,7 @@
                         });
                     }, Release: function(item) {
                         return $("<button>").text('Release Handle').click(function() {
-                            $.get('/release/'+item.handle);
+                            $.post('/release/'+item.handle, {});
                         });
                     }}, json.handles);
                     buildTable(tables[5], {batchId: "Batch ID", handle: "Handle"}, json.pendingLocks);

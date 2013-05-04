@@ -14,10 +14,10 @@ var BeliefState = {
 
 (function($) {
 
-	$.fn.streamer = function(audioUrl) {
+	$.fn.streamer = function(vmcloudRoot, audioUrl) {
 		this.empty();
 		this.flash({
-			src: "streamer.swf",
+			src: vmcloudRoot+"static/streamer.swf",
 			width:112,
 			height:29,
 			flashvars:{audioUrl:audioUrl}
@@ -52,7 +52,7 @@ var BeliefState = {
 					});
 					var div = $("<div>");
 					target.append(div);
-					div.streamer("http://"+data.vm.public_ip+":8000/stream.mp3");
+					div.streamer(vmcloudRoot, "http://"+data.vm.public_ip+":8000/stream.mp3");
 				} else {
 					setTimeout(check, 1000);
 				}

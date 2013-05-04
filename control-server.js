@@ -100,6 +100,7 @@ var poolSize = {
 	min: 0, max: 0, linger: 0
 };
 var cloudController = null;
+var outstandingEvents = {};
 
 
 function VMInfo(vmid) {
@@ -664,6 +665,19 @@ function runControlServer() {
 		},
 		browser_event: function (vmid, data, callback) {
 			vlog("Browser event received: " + JSON.stringify(data));
+			var handleId = null;
+			for(var i=0;i<handles;i++) {
+				if (handleData[handles[i]].vmid == vmid) {
+					handleId = handles[i];
+					break;
+				}
+			}
+			if (handleId != null) {
+				if (!outstandingEvents[handleId]) {
+					outstandingEvents[handleId] = [];
+				}
+				outstandingEvents[handleId].push(data);
+			}
 			callback();
 		},
 		log: function (vmid, msg, callback) {
@@ -727,8 +741,8 @@ function runControlServer() {
 	});
 
 	app.post('/renew-expire/:handle/:time', function(req, res) {
-		log('Received web request to renew and schedule for expiration handle #'
-			+ req.params.handle + ' after ' + req.params.time + 'ms');
+		//log('Received web request to renew and schedule for expiration handle #'
+		//	+ req.params.handle + ' after ' + req.params.time + 'ms');
 		var handle = parseInt(req.params.handle);
 		var time = parseInt(req.params.time);
 		if (!_.contains(handles, handle)) {
@@ -772,6 +786,15 @@ function runControlServer() {
 			cancelBatch(batchId);
 		}
 		res.send('');
+	});
+
+	app.get('/fetch-events/:handle', function(req, res) {
+		var handle = parseInt(req.params.handle);
+		var result = '{}';
+		if (handle in outstandingEvents) {
+			result = JSON.stringify(outstandingEvents[handle]);
+		}
+		res.send(result);
 	});
 
 	app.get('/all-status', function (req, res) {

@@ -812,7 +812,7 @@ function runControlServer() {
 	app.get('/fetch-events/:handle', function(req, res) {
 		var handle = parseInt(req.params.handle);
 
-		waitForPendingEvent(function (){
+		waitForPendingEvent(handle, function (){
 			res.send(JSON.stringify(outstandingEvents[handle]));
 		}, 5000);
 	});

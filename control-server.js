@@ -659,7 +659,7 @@ function runPinger() {
 
 var pendingEventWait = null;
 function waitForPendingEvent(handle, callback, timeout) {
-	if(handle in outstandingEvents && outstandingEvents[handle].length>0) {
+	if(handle in outstandingEvents) {
 		callback();
 	} else {
 		var t = setTimeout(callback, timeout);
@@ -813,7 +813,12 @@ function runControlServer() {
 		var handle = parseInt(req.params.handle);
 
 		waitForPendingEvent(handle, function (){
-			res.send(JSON.stringify(outstandingEvents[handle]));
+			if (handle in outstandingEvents) {
+				res.send(JSON.stringify(outstandingEvents[handle]));
+				delete outstandingEvents[handle];
+			} else {
+				res.send('[]');
+			}
 		}, 5000);
 	});
 

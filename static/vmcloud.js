@@ -17,9 +17,10 @@ var BeliefState = {
 	$.fn.streamer = function(vmcloudRoot, audioUrl) {
 		this.empty();
 		this.flash({
-			src: "streamer.swf",
+			src: vmcloudRoot+"static/streamer.swf",
 			width:112,
 			height:29,
+			AllowScriptAccess: 'always',
 			flashvars:{audioUrl:audioUrl}
 		});
 	};

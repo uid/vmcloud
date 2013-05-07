@@ -19,39 +19,13 @@ var rpc = config.rpcInterface;
 
 function runFirefoxPluginListenerServer() {
 
-	function browser_page_loaded(profile, url) {
-		log("Browser page loaded: " + JSON.stringify({profile: profile, url: url}));
-		rpc.browser_event(vmid, {
-			'action': 'page-load',
-			'profile': profile,
-			'url': url
-		}, function (result) {
-		});
-	}
-
 	var app = express();
 	app.use(express.bodyParser());
 	app.post('/browser-events', function (req, res) {
 		log("POST /browser-events " + JSON.stringify(req.body));
 		var data = req.body;
-		if ('action' in data) {
-			switch (data['action']) {
-				case 'page-load':
-					var url = data['url'];
-					var profile = data['profile'];
-					if (!url || !profile) {
-						error("page-load data must contain url and profile");
-					}
-					if ('url' in data && 'profile' in data) {
-						browser_page_loaded(profile, url);
-					}
-					break;
-				default:
-					error("invalid action: " + data['action']);
-			}
-		} else {
-			error("invalid request to /browser-events: " + JSON.stringify(data));
-		}
+		rpc.browser_event(vmid, data, function(){});
+		res.send('');
 	});
 
 	app.listen(config.vm.firefox_port);

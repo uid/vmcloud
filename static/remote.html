@@ -13,7 +13,9 @@
     <script src="vmcloud.js"></script>
     <script>
         $(function() {
-            $("#vmremote").vmRemote('/', getURLParameter('handle'));
+            $("#vmremote").vmRemote('/', getURLParameter('handle'), function(data) {
+                console.log(JSON.stringify(data));
+            });
         })
     </script>
 </head>

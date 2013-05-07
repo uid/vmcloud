@@ -657,6 +657,30 @@ function runPinger() {
 	setInterval(pingVMs, config.control.ping_interval);
 }
 
+var pendingEventWait = null;
+function waitForPendingEvent(handle, callback, timeout) {
+	if(handle in outstandingEvents && outstandingEvents[handle].length>0) {
+		callback();
+	} else {
+		var t = setTimeout(callback, timeout);
+		pendingEventWait = function() {
+			clearTimeout(t);
+			pendingEventWait = null;
+			callback();
+		};
+	}
+}
+
+function addEventToHandle(handle, data) {
+	if (!(handle in outstandingEvents)) {
+		outstandingEvents[handle] = [];
+	}
+	outstandingEvents[handle].push(data);
+	if (pendingEventWait != null) {
+		pendingEventWait();
+	}
+}
+
 function runControlServer() {
 	var rpc_server = new rpcEngine({
 		checkin: function (vmid, callback) {
@@ -665,18 +689,15 @@ function runControlServer() {
 		},
 		browser_event: function (vmid, data, callback) {
 			vlog("Browser event received: " + JSON.stringify(data));
-			var handleId = null;
+			var handle = null;
 			for(var i=0;i<handles;i++) {
 				if (handleData[handles[i]].vmid == vmid) {
-					handleId = handles[i];
+					handle = handles[i];
 					break;
 				}
 			}
-			if (handleId != null) {
-				if (!outstandingEvents[handleId]) {
-					outstandingEvents[handleId] = [];
-				}
-				outstandingEvents[handleId].push(data);
+			if (handle != null) {
+				addEventToHandle(handle, data);
 			}
 			callback();
 		},
@@ -790,11 +811,10 @@ function runControlServer() {
 
 	app.get('/fetch-events/:handle', function(req, res) {
 		var handle = parseInt(req.params.handle);
-		var result = '{}';
-		if (handle in outstandingEvents) {
-			result = JSON.stringify(outstandingEvents[handle]);
-		}
-		res.send(result);
+
+		waitForPendingEvent(function (){
+			res.send(JSON.stringify(outstandingEvents[handle]));
+		}, 5000);
 	});
 
 	app.get('/all-status', function (req, res) {

@@ -27,7 +27,7 @@ var BeliefState = {
 })(jQuery);
 
 (function($) {
-	$.fn.vmRemote = function(vmcloudRoot, handle) {
+	$.fn.vmRemote = function(vmcloudRoot, handle, eventCallback) {
 		var target = this;
 		target.text("One moment while we prepare your task...");
 		setTimeout(function check() {
@@ -53,6 +53,18 @@ var BeliefState = {
 					var div = $("<div>");
 					target.append(div);
 					div.streamer(vmcloudRoot, "http://"+data.vm.public_ip+":8000/stream.mp3");
+
+					function fetchEvent() {
+						$.get(vmcloudRoot + 'fetch-events/'+handle, function(data) {
+							if (data.length > 0) {
+								for(var i=0;i<data.length;i++) {
+									eventCallback(data[i]);
+								}
+							}
+							fetchEvent();
+						}, 'json');
+					}
+					fetchEvent();
 				} else {
 					setTimeout(check, 1000);
 				}

@@ -17,4 +17,8 @@ grep session-setup-script /etc/lightdm/lightdm.conf || echo "session-setup-scrip
 cp scripts/icecast.xml /etc/icecast2/icecast.xml
 cp scripts/icecast2 /etc/default/icecast2
 
+rm -rf /usr/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/cbevent@uid.csail.mit.edu
+cp -r firefox-extension /usr/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/cbevent@uid.csail.mit.edu
+chmod -R 777 /usr/share/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/cbevent@uid.csail.mit.edu
+
 sync

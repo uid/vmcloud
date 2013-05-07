@@ -22,30 +22,21 @@ function doPost(url, params) {
     http.send(encodedParams);
 }
 var cbeventExtension = {
-    profile: null,
     init: function() {
         if (gBrowser) {
 			gBrowser.addEventListener("DOMContentLoaded", cbeventExtension.onPageLoad, true);
 		}
-        var prefs = Components.classes["@mozilla.org/preferences-service;1"]
-            .getService(Components.interfaces.nsIPrefService)
-            .getBranch("extensions.cbevent.");
-        prefs.QueryInterface(Components.interfaces.nsIPrefBranch2);
-        this.profile = prefs.getCharPref("pref_profile_string");
 	},
 	
 	onPageLoad: function(event) {
         var doc = event.originalTarget;
         doPost("http://localhost:9091/browser-events", {
             action: 'page-load',
-            profile: this.profile,
-            url: doc.location
+            url: doc.location,
+	        title: doc.title
         });
     }
 };
-
-
-
 
 function cbevent_init() {
 	window.removeEventListener("load", cbevent_init, false);

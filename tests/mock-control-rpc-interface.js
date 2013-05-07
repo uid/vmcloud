@@ -7,6 +7,7 @@ module.exports = exports = {
 		callback();
 	},
 	browser_event: function (vmid, data, callback) {
+		console.log("Browser event: " + JSON.stringify(data));
 		callback();
 	},
 	getConfig: function (vmid, callback) {

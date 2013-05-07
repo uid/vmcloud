@@ -18,8 +18,8 @@ var BeliefState = {
 		this.empty();
 		this.flash({
 			src: vmcloudRoot+"static/streamer.swf",
-			width:112,
-			height:29,
+			width:0,
+			height:0,
 			AllowScriptAccess: 'always',
 			flashvars:{audioUrl:audioUrl}
 		});

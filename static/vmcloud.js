@@ -17,7 +17,7 @@ var BeliefState = {
 	$.fn.streamer = function(vmcloudRoot, audioUrl) {
 		this.empty();
 		this.flash({
-			src: "/static/streamer.swf",
+			src: "streamer.swf",
 			width:112,
 			height:29,
 			flashvars:{audioUrl:audioUrl}

@@ -225,8 +225,6 @@ function publish_audio_rtsp(sink_name, port) {
  */
 function publish_audio_http(sink_name) {
 	log("Publishing sink "+sink_name+" to HTTP port 8090");
-	/*return exec("ffserver -f ffserver.conf; parec --latency=1 --format=s16le --channels=1 -d " + sink_name + ".monitor | " +
-		"avconv -f s16le -ac 1 -ar 44100 -i - http://localhost:8090/feed1.ffm");*/
 	return exec_dbg('darkice -c scripts/darkice.conf');
 }
 

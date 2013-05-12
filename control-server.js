@@ -809,6 +809,7 @@ function runControlServer() {
 					break;
 				}
 			}
+			vlog("Browser event is for handle "+handle);
 			if (handle != null) {
 				addEventToHandle(handle, data);
 			}

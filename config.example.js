@@ -84,6 +84,8 @@ module.exports = exports = {
 		 * Milliseconds per ping to VM instances
 		 */
 		ping_interval: 5 * 1000, // Ping interval
+
+		max_pool_size_allowed: 30, // A hard limit on the maximum # VMs allowed
 	},
 
 	vm: {

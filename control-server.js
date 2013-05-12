@@ -730,9 +730,14 @@ function runControlServer() {
 		var min = parseInt(req.params.min);
 		var max = parseInt(req.params.max);
 		var linger = parseInt(req.params.linger);
-		if (max > 10 || min > max || min < 0 || max < 0) {
+		if (min > max || min < 0 || max < 0) {
 			log("Invalid params.");
 		} else {
+			var maxAllowed = config.control.max_pool_size_allowed;
+			if (max > maxAllowed) {
+				log("Exceeding max pool size; setting max instead to " + maxAllowed);
+				max = maxAllowed;
+			}
 			setPoolSize(min, max, linger);
 		}
 		res.send("");

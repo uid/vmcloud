@@ -803,13 +803,13 @@ function runControlServer() {
 		browser_event: function (vmid, data, callback) {
 			vlog("Browser event received: " + JSON.stringify(data));
 			var handle = null;
-			for(var i=0;i<handles;i++) {
+			for(var i=0;i<handles.length;i++) {
 				if (handleData[handles[i]].vmid == vmid) {
 					handle = handles[i];
 					break;
 				}
 			}
-			vlog("Browser event is for handle "+handle);
+			//vlog("Browser event is for handle "+handle);
 			if (handle != null) {
 				addEventToHandle(handle, data);
 			}

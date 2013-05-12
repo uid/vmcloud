@@ -11,6 +11,7 @@ var dlog = common.dlog;
 var assert = common.assert;
 var express = require('express');
 var fs = require('fs');
+var path = require('path');
 var async = require('async');
 
 var BeliefState = common.BeliefState;
@@ -102,6 +103,60 @@ var poolSize = {
 var cloudController = null;
 var outstandingEvents = {};
 
+/**
+ * Return a JSON containing ALL the states
+ */
+function saveAllStates() {
+	return JSON.stringify({
+		pool: pool,
+		vmData: vmData,
+		nextVMID: nextVMID,
+		batches: batches,
+		batchData: batchData,
+		nextBatchID: nextBatchID,
+		prepQueue: prepQueue,
+		handles: handles,
+		handleData: handleData,
+		nextHandle: nextHandle,
+		pendingLocks: pendingLocks,
+		poolSize: poolSize
+	});
+}
+
+/**
+ * Load all states from a JSON
+ * @param json
+ */
+function loadAllStates(json) {
+	var obj = JSON.parse(json);
+	rpc = {};
+	pool = obj.pool;
+	vmData = obj.vmData;
+	nextVMID = obj.nextVMID;
+	batches = obj.batches;
+	batchData = obj.batchData;
+	nextBatchID = obj.nextBatchID;
+	prepQueue = obj.prepQueue;
+	handles = obj.handles;
+	handleData = obj.handleData;
+	nextHandle = obj.nextHandle;
+	pendingLocks = obj.pendingLocks;
+	poolSize = obj.poolSize;
+	for(var i=0;i<pool.length;i++) {
+		var vmid = pool[i];
+		var vm = vmData[vmid];
+		vm.state = verState(vmid, vm.state.state);
+		var state = vm.state.get();
+		// If not a stable state, then let's not try to recover it.
+		if (!_.contains([BeliefState.FREE, BeliefState.READY, BeliefState.OCCUPIED], state)) {
+			vm.state.set(BeliefState.ERROR);
+		} else {
+			rpc[vmid] = config.rpcFactory(vm.ip);
+		}
+	}
+}
+
+
 
 function VMInfo(vmid) {
 	return {
@@ -122,7 +177,7 @@ function bootNewVM() {
 	cloudController.boot(vmid, function (server) {
 		vmData[vmid].server = server;
 		vmData[vmid].state.verSet(0, BeliefState.BOOTING);
-		log("Successfully booted: " + vmid + ", OpenStack instance id = " + server.id
+		log("Successfully booted: " + vmid + ", Cloud instance id = " + cloudController.getIDFromServer(server)
 			/*+ ", server info: " + JSON.stringify(server)*/
 		);
 		checkRules();
@@ -132,7 +187,7 @@ function bootNewVM() {
 
 function killVM(vmid) {
 	var vm = vmData[vmid];
-	var id = vm.server.id;
+	var id = cloudController.getIDFromServer(vm.server);
 	if (!id) {
 		log("Error when killing VM: VM " + vmid + " not ready!");
 		return;
@@ -151,7 +206,7 @@ function killVM(vmid) {
 // Refresh the server info from the cloud, and then transition into the given state
 function updateInstanceInfoFromCloud(vmid, callback) {
 	var vm = vmData[vmid];
-	cloudController.getServer(vm.server.id, function (server) {
+	cloudController.getServer(cloudController.getIDFromServer(vm.server), function (server) {
 		//vlog("VM #" + vmid + " info updated: " + JSON.stringify(server));
 		vm.server = server;
 		callback();
@@ -183,7 +238,7 @@ function prepareVM(vmid, data, callback) {
 			cb(null, result);
 		});
 	}, function (cb) {
-		cloudController.assignIP(vm.server.id, function (err, ip) {
+		cloudController.assignIP(cloudController.getIDFromServer(vm.server), function (err, ip) {
 			if (err) {
 				cb(err);
 			} else {
@@ -219,7 +274,7 @@ function cleanupVM(vmid, data, callback) {
 			cb(null, result);
 		});
 	}, function (cb) {
-		cloudController.removeIP(vm.server.id, vm.public_ip, function (err) {
+		cloudController.removeIP(cloudController.getIDFromServer(vm.server), vm.public_ip, function (err) {
 			if (err) {
 				cb(err);
 			} else {
@@ -258,8 +313,10 @@ function pingVMs() {
 		if (_.contains([BeliefState.FREE, BeliefState.READY, BeliefState.OCCUPIED], state)) {
 			(function (vmid, vm) {
 				var ver = vm.state.getVer();
+				var state = vm.state.get();
 				rpc[vmid].ping(function (result) {
-					if (result) {
+					if (result == VMStates.FREE && state == BeliefState.FREE
+						|| result == VMStates.READY && (state == BeliefState.READY || state == BeliefState.OCCUPIED)) {
 						vm.state.verRefresh(ver);
 					} else {
 						vm.state.set(BeliefState.ERROR);
@@ -270,7 +327,7 @@ function pingVMs() {
 		}
 		if (state == BeliefState.BOOTING) {
 			(function (vmid, vm) {
-				cloudController.getServer(vm.server.id, function (server) {
+				cloudController.getServer(cloudController.getIDFromServer(vm.server), function (server) {
 					if (server && server.status == 'ERROR') {
 						log("VM #" + vmid + " launching error. Killing VM.");
 						killVM(vmid);
@@ -394,6 +451,34 @@ function checkRules() {
 	setImmediate(executeRules);
 }
 
+var isWritingToDisk = false;
+var isCheckpointPending = false;
+
+function checkPointToDisk() {
+	if (!isWritingToDisk) {
+		var checkpointfile = config.control.checkpoint_file;
+		fs.writeFile(checkpointfile + ".temp", saveAllStates(), 'utf8', function() {
+			fs.rename(checkpointfile + ".temp", checkpointfile, function() {
+				isWritingToDisk = false;
+				if (isCheckpointPending) {
+					isCheckpointPending = false;
+					checkPointToDisk();
+				}
+			});
+		});
+	} else {
+		isCheckpointPending = true;
+	}
+}
+
+function loadCheckpointFromDisk() {
+	var checkpointfile = config.control.checkpoint_file;
+	if (path.existsSync(checkpointfile)) {
+		var data = fs.readFileSync(checkpointfile, 'utf8');
+		loadAllStates(data);
+	}
+}
+
 function executeRules() {
 	checkRulesScheduled = false;
 	var ruleTriggered = runRule_pool()
@@ -409,6 +494,8 @@ function executeRules() {
 		//log("Prep queue: " + JSON.stringify(prepQueue));
 		//log("Batch list: " + JSON.stringify(batchData));
 		checkRules();
+	} else {
+		checkPointToDisk();
 	}
 }
 
@@ -649,12 +736,38 @@ function runRule_handleExpire() {
 	return false;
 }
 
+function removeStrayVMs() {
+	cloudController.getAllServers(function(data) {
+		_.each(data, function(server) {
+			var name = cloudController.getNameFromServer(server);
+			if (name.indexOf(config.openstack.instance_name_prefix) == 0) {
+				var trail = name.substring(config.openstack.instance_name_prefix.length);
+				var vmid = parseInt(trail);
+				var cloudId = cloudController.getIDFromServer(server);
+				if (!_.contains(pool, vmid)) {
+					log("Removing stray VM " + name + " with ID " + cloudId);
+					cloudController.kill(cloudId, function(){});
+				} else {
+					if (cloudController.getIDFromServer(vmData[vmid].server) != cloudId) {
+						log("Removing stray VM " + name + " with ID " + cloudId);
+						cloudController.kill(cloudId, function(){});
+					}
+				}
+			}
+		});
+	});
+}
+
 function runRuleMaintainer() {
 	setInterval(checkRules, 1000);
 }
 
 function runPinger() {
 	setInterval(pingVMs, config.control.ping_interval);
+}
+
+function runStrayVMRemover() {
+	setInterval(removeStrayVMs, 60000);
 }
 
 var pendingEventWait = null;
@@ -862,6 +975,8 @@ function runControlServer() {
 
 	app.use('/static', express.static(__dirname + '/static'));
 
+	loadCheckpointFromDisk();
+
 	cloudController = config.cloudController;
 	log("Cloud connected.");
 
@@ -870,7 +985,8 @@ function runControlServer() {
 
 	runRuleMaintainer();
 	runPinger();
-	log("Rule maintainer and pinger started.");
+	runStrayVMRemover();
+	log("Rule maintainer, pinger, and stray VM remover started.");
 
 	app.listen(config.control.external_port);
 	log("External web server started on port " + config.control.external_port);

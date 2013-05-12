@@ -41,23 +41,39 @@ module.exports = exports = {
 		},
 		getIPFromServer: function (server) {
 			return server.id;
+		},
+		getNameFromServer: function(server) {
+			return server.name;
+		},
+		getIDFromServer: function(server) {
+			return server.id;
+		},
+		getAllServers: function(id, callback) {
+			return [];
 		}
 	},
-	vmRpcInterface: {
-		ping: function(callback) {
-			setTimeout(function() {
-				callback(true);
-			}, 400);
-		},
-		prepare: function(data, callback) {
-			setTimeout(function() {
-				callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
-			}, 6000);
-		},
-		cleanup: function(data, callback) {
-			setTimeout(function() {
-				callback({state: VMStates.FREE});
-			}, 3000);
-		}
+	vmRpcInterface: function() {
+		var state = VMStates.FREE;
+		return {
+			ping: function(callback) {
+				setTimeout(function() {
+					callback(state);
+				}, 400);
+			},
+			prepare: function(data, callback) {
+				state = VMStates.WAIT;
+				setTimeout(function() {
+					callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
+					state = VMStates.READY;
+				}, 6000);
+			},
+			cleanup: function(data, callback) {
+				state = VMStates.WAIT;
+				setTimeout(function() {
+					callback({state: VMStates.FREE});
+					state = VMStates.FREE;
+				}, 3000);
+			}
+		};
 	}
 };

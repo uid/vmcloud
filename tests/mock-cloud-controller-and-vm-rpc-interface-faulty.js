@@ -51,31 +51,49 @@ module.exports = exports = {
 		},
 		getIPFromServer: function (server) {
 			return server.id;
+		},
+		getNameFromServer: function(server) {
+			return server.name;
+		},
+		getIDFromServer: function(server) {
+			return server.id;
+		},
+		getAllServers: function(id, callback) {
+			return [];
 		}
 	},
-	vmRpcInterface: {
-		ping: function(callback) {
-			setTimeout(function() {
-				callback(true);
-			}, 400);
-		},
-		prepare: function(data, callback) {
-			setTimeout(function() {
-				coinFlip(0.6, function() {
-					callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
-				}, function() {
-					callback({state: VMStates.ERROR});
-				})
-			}, 6000);
-		},
-		cleanup: function(data, callback) {
-			setTimeout(function() {
-				coinFlip(0.6, function() {
-					callback({state: VMStates.FREE});
-				}, function() {
-					callback({state: VMStates.ERROR});
-				})
-			}, 3000);
-		}
+	vmRpcInterface: function(){
+		var state = VMStates.FREE;
+		return {
+			ping: function(callback) {
+				setTimeout(function() {
+					callback(state);
+				}, 400);
+			},
+			prepare: function(data, callback) {
+				state = VMStates.WAIT;
+				setTimeout(function() {
+					coinFlip(0.6, function() {
+						state = VMStates.READY;
+						callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
+					}, function() {
+						state = VMStates.ERROR;
+						callback({state: VMStates.ERROR});
+					})
+				}, 6000);
+			},
+			cleanup: function(data, callback) {
+				state = VMStates.WAIT;
+				setTimeout(function() {
+					coinFlip(0.6, function() {
+						state = VMStates.FREE;
+						callback({state: VMStates.FREE});
+					}, function() {
+						state = VMStates.ERROR;
+						callback({state: VMStates.ERROR});
+					})
+				}, 3000);
+			}
+		};
 	}
 };

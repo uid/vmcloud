@@ -358,6 +358,17 @@ function getOpenStackController(bigCallback) {
 					},
 					getIPFromServer: function(server) {
 						return server.addresses.private[config.openstack.private_ip_index].addr;
+					},
+					getNameFromServer: function(server) {
+						return server.name;
+					},
+					getIDFromServer: function(server) {
+						return server.id;
+					},
+					getAllServers: function(callback) {
+						client.getServers(function(data) {
+							callback(data);
+						});
 					}
 				};
 				bigCallback(controller);

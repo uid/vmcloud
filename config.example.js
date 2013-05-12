@@ -86,6 +86,8 @@ module.exports = exports = {
 		ping_interval: 5 * 1000, // Ping interval
 
 		max_pool_size_allowed: 30, // A hard limit on the maximum # VMs allowed
+
+		checkpoint_file: 'checkpoint.json', // the file to checkpoint data to
 	},
 
 	vm: {

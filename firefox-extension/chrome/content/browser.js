@@ -30,6 +30,7 @@ var cbeventExtension = {
 	
 	onPageLoad: function(event) {
         var doc = event.originalTarget;
+		if (doc.defaultView.parent != doc.defaultView) return;
         doPost("http://localhost:9091/browser-events", {
             action: 'page-load',
             url: doc.location,

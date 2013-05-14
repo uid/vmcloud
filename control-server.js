@@ -809,7 +809,7 @@ function EventWindow() {
 		} else {
 			return {
 				lastId: lastId,
-				newEvents: window.slice(lastKnownId - this.offset)
+				newEvents: this.window.slice(lastKnownId - this.offset)
 			};
 		}
 	};

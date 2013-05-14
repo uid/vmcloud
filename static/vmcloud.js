@@ -55,17 +55,28 @@ var BeliefState = {
 					target.append(div);
 					div.streamer(vmcloudRoot, "http://"+data.vm.public_ip+":8000/stream.mp3");
 
+					var lastEventId;
+
+
 					function fetchEvent() {
 						$.get(vmcloudRoot + 'fetch-events/'+handle, function(data) {
-							if (data.length > 0) {
-								for(var i=0;i<data.length;i++) {
-									eventCallback(data[i]);
+							if (data.newEvents.length > 0) {
+								for(var i=0;i<data.newEvents.length;i++) {
+									eventCallback(data.newEvents[i]);
 								}
 							}
+							lastEventId = data.lastId;
 							fetchEvent();
 						}, 'json');
 					}
-					fetchEvent();
+
+					function getLastEventId() {
+						$.get(vmcloudRoot + 'last-event-id/'+handle, function(id) {
+							lastEventId = parseInt(id);
+							fetchEvent();
+						})
+					}
+					getLastEventId();
 				} else {
 					setTimeout(check, 1000);
 				}

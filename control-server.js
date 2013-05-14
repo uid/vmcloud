@@ -101,7 +101,7 @@ var poolSize = {
 	min: 0, max: 0, linger: 0
 };
 var cloudController = null;
-var outstandingEvents = {};
+var eventsWindow = {};
 
 /**
  * Return a JSON containing ALL the states
@@ -770,28 +770,93 @@ function runStrayVMRemover() {
 	setInterval(removeStrayVMs, 60000);
 }
 
-var pendingEventWait = null;
-function waitForPendingEvent(handle, callback, timeout) {
-	if(handle in outstandingEvents) {
-		callback();
+
+function EventWindow() {
+	this.offset = 0;
+	this.window = [];
+	this.pendingWaits = [];
+	this.addEvent = function(event) {
+		var curTime = Date.now();
+		this.window.push({
+			time: curTime,
+			data: event
+		});
+
+		for(var i=0;i<this.pendingWaits.length;i++) {
+			this.pendingWaits[i]();
+		}
+		this.pendingWaits.length = 0;
+
+		// Keep events around for 1 minute, but only cleaning them if 2 miunutes pass so we don't have to clean them
+		// so frequently.
+		if (curTime - this.window[0].time > 2 * 60 * 1000) {
+			var lastUnexpiredIndex = 0;
+			while (lastUnexpiredIndex < this.window.length && curTime - this.window[lastUnexpiredIndex].time > 60 * 1000) {
+				lastUnexpiredIndex++;
+			}
+			this.offset += lastUnexpiredIndex;
+			this.window.splice(0, lastUnexpiredIndex);
+		}
+	};
+
+	this.getEvents = function(lastKnownId) {
+		var lastId = this.getLastId();
+		if (lastId <= lastKnownId) {
+			return {
+				lastId: lastId,
+				newEvents: []
+			};
+		} else {
+			return {
+				lastId: lastId,
+				newEvents: window.slice(lastKnownId - this.offset)
+			};
+		}
+	};
+
+	this.getLastId = function() {
+		return this.window.length - 1 + this.offset;
+	};
+
+	this.waitForEvents = function(lastKnownId, maxWait, callback) {
+		var _this = this;
+		var events = this.getEvents(lastKnownId);
+		if (events.newEvents.length > 0) {
+			callback(events);
+		} else {
+			var alreadyReplied = false;
+			var reply = function () {
+				if (alreadyReplied) return;
+				alreadyReplied = true;
+				callback(_this.getEvents(lastKnownId));
+			};
+			setTimeout(reply, maxWait);
+			this.pendingWaits.push(reply);
+		}
+	};
+}
+
+function waitForPendingEvent(handle, lastKnownId, callback, timeout) {
+	if (!(handle in eventsWindow)) {
+		// shouldn't happen if client is following protocol
+		callback({error: "Invalid handle"});
 	} else {
-		var t = setTimeout(callback, timeout);
-		pendingEventWait = function() {
-			clearTimeout(t);
-			pendingEventWait = null;
-			callback();
-		};
+		eventsWindow[handle].waitForEvents(lastKnownId, timeout, callback);
 	}
 }
 
 function addEventToHandle(handle, data) {
-	if (!(handle in outstandingEvents)) {
-		outstandingEvents[handle] = [];
+	if (!(handle in eventsWindow)) {
+		eventsWindow[handle] = new EventWindow();
 	}
-	outstandingEvents[handle].push(data);
-	if (pendingEventWait != null) {
-		pendingEventWait();
+	eventsWindow[handle].addEvent(data);
+}
+
+function getHandleEventsLastId(handle) {
+	if (!(handle in eventsWindow)) {
+		eventsWindow[handle] = new EventWindow();
 	}
+	return eventsWindow[handle].getLastId();
 }
 
 function runControlServer() {
@@ -928,17 +993,18 @@ function runControlServer() {
 		res.send('');
 	});
 
-	app.get('/fetch-events/:handle', function(req, res) {
+	app.get('/fetch-events/:handle/:lastid', function(req, res) {
 		var handle = parseInt(req.params.handle);
 
-		waitForPendingEvent(handle, function (){
-			if (handle in outstandingEvents) {
-				res.send(JSON.stringify(outstandingEvents[handle]));
-				delete outstandingEvents[handle];
-			} else {
-				res.send('[]');
-			}
+		waitForPendingEvent(handle, function (result){
+			res.send(result);
 		}, 5000);
+	});
+
+	app.get('/last-event-id/:handle', function(req, res) {
+		var handle = parseInt(req.params.handle);
+
+		res.send(''+getHandleEventsLastId(handle));
 	});
 
 	app.get('/all-status', function (req, res) {

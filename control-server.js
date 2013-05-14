@@ -173,12 +173,20 @@ function bootNewVM() {
 	nextVMID++;
 	pool.push(vmid);
 	vmData[vmid] = VMInfo(vmid);
-	cloudController.boot(vmid, function (server) {
-		vmData[vmid].server = server;
-		vmData[vmid].state.verSet(0, BeliefState.BOOTING);
-		log("Successfully booted: " + vmid + ", Cloud instance id = " + cloudController.getIDFromServer(server)
-			/*+ ", server info: " + JSON.stringify(server)*/
-		);
+	cloudController.boot(vmid, function (err, server) {
+		if (err) {
+			log(err);
+			// just remove the VM from the list. If the VM failed to boot, killVM may fail, so we will just ignore it.
+			// If it happens to have booted, the stray VM remover will remove it anyway.
+			pool.remove(vmid);
+			delete vmData[vmid];
+		} else {
+			vmData[vmid].server = server;
+			vmData[vmid].state.verSet(0, BeliefState.BOOTING);
+			log("Successfully booted: " + vmid + ", Cloud instance id = " + cloudController.getIDFromServer(server)
+				/*+ ", server info: " + JSON.stringify(server)*/
+			);
+		}
 		checkRules();
 	});
 	checkRules();
@@ -188,16 +196,19 @@ function killVM(vmid) {
 	var vm = vmData[vmid];
 	var id = cloudController.getIDFromServer(vm.server);
 	if (!id) {
-		log("Error when killing VM: VM " + vmid + " not ready!");
-		return;
-	}
-	vm.state.set(BeliefState.KILLING);
-	pool.remove(vmid); // Remove from pool because it's no longer considered part of the pool
-	cloudController.kill(id, function () {
-		log("Successfully terminated: " + vmid + ": " + id);
+		log("Error when killing VM: VM " + vmid + " does not have an id. Will just remove the VM from the pool.");
+		pool.remove(vmid);
 		delete vmData[vmid];
-		checkRules();
-	});
+		return;
+	} else {
+		vm.state.set(BeliefState.KILLING);
+		pool.remove(vmid); // Remove from pool because it's no longer considered part of the pool
+		cloudController.kill(id, function () {
+			log("Successfully terminated: " + vmid + ": " + id);
+			delete vmData[vmid];
+			checkRules();
+		});
+	}
 	checkRules();
 }
 

@@ -11,12 +11,12 @@ module.exports = exports = {
 			vms[id] = {
 				id: '' + id
 			};
-			setTimeout(function() {
-				callback(vms[id]);
+			setTimeout(function () {
+				callback(null, vms[id]);
 			}, 2000);
-			setTimeout(function() {
-				rpc.connect(9090, 'localhost', function(remote, conn) {
-					remote.checkin(vmid, function() {
+			setTimeout(function () {
+				rpc.connect(9090, 'localhost', function (remote, conn) {
+					remote.checkin(vmid, function () {
 						conn.end();
 						conn.destroy();
 					});
@@ -27,12 +27,12 @@ module.exports = exports = {
 			setTimeout(callback, 1000);
 		},
 		getServer: function (id, callback) {
-			setTimeout(function() {
+			setTimeout(function () {
 				callback(vms[id]);
 			}, 1000);
 		},
 		assignIP: function (id, callback) {
-			setTimeout(function() {
+			setTimeout(function () {
 				callback(null, id);
 			}, 2000);
 		},
@@ -40,36 +40,36 @@ module.exports = exports = {
 			setTimeout(callback, 1000);
 		},
 		getIPFromServer: function (server) {
-			return server.id;
+			return server == null ? null : server.id;
 		},
-		getNameFromServer: function(server) {
-			return server.name;
+		getNameFromServer: function (server) {
+			return server == null ? null : server.name;
 		},
-		getIDFromServer: function(server) {
-			return server.id;
+		getIDFromServer: function (server) {
+			return server == null ? null : server.id;
 		},
-		getAllServers: function(id, callback) {
+		getAllServers: function (id, callback) {
 			return [];
 		}
 	},
-	vmRpcInterface: function() {
+	vmRpcInterface: function () {
 		var state = VMStates.FREE;
 		return {
-			ping: function(callback) {
-				setTimeout(function() {
+			ping: function (callback) {
+				setTimeout(function () {
 					callback(state);
 				}, 400);
 			},
-			prepare: function(data, callback) {
+			prepare: function (data, callback) {
 				state = VMStates.WAIT;
-				setTimeout(function() {
+				setTimeout(function () {
 					callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
 					state = VMStates.READY;
 				}, 6000);
 			},
-			cleanup: function(data, callback) {
+			cleanup: function (data, callback) {
 				state = VMStates.WAIT;
-				setTimeout(function() {
+				setTimeout(function () {
 					callback({state: VMStates.FREE});
 					state = VMStates.FREE;
 				}, 3000);

@@ -201,7 +201,12 @@ function V2Client(tenant_id, auth) {
 				})
 			}, function (e, r, body) {
 				if (!statusCheck(r, fail)) return;
-				callback(JSON.parse(body).server);
+				var json = JSON.parse(body);
+				if (!('server' in json) || !('id' in json.server)) {
+					log("Failed to boot VM: " + body);
+					callback("Failed to boot VM: " + body);
+				}
+				callback(null, json.server);
 			});
 		});
 	};
@@ -315,8 +320,8 @@ function getOpenStackController(bigCallback) {
 								{name: sgroupId}
 							],
 							user_data: new Buffer(getStartupScript(vmid)).toString('base64')
-						}, function (json) {
-							callback(json); // TODO: what if booting fails?
+						}, function (err, json) {
+							callback(err, json);
 						});
 					},
 					kill: function (id, callback) {
@@ -342,7 +347,7 @@ function getOpenStackController(bigCallback) {
 								}
 							});
 						} else {
-							this.getServer(id, function(server) {
+							this.getServer(id, function (server) {
 								callback(null, controller.getIPFromServer(server));
 							});
 						}
@@ -356,17 +361,17 @@ function getOpenStackController(bigCallback) {
 							callback(null);
 						}
 					},
-					getIPFromServer: function(server) {
-						return server.addresses.private[config.openstack.private_ip_index].addr;
+					getIPFromServer: function (server) {
+						return server == null ? null : server.addresses.private[config.openstack.private_ip_index].addr;
 					},
-					getNameFromServer: function(server) {
-						return server.name;
+					getNameFromServer: function (server) {
+						return server == null ? null : server.name;
 					},
-					getIDFromServer: function(server) {
-						return server.id;
+					getIDFromServer: function (server) {
+						return server == null ? null : server.id;
 					},
-					getAllServers: function(callback) {
-						client.getServers(function(data) {
+					getAllServers: function (callback) {
+						client.getServers(function (data) {
 							callback(data);
 						});
 					}

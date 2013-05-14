@@ -4,7 +4,9 @@ var VMStates = require('../common.js').VMStates;
 var rpc = require('../rpc.js');
 
 
-function coinFlip(x, trueFunc, falseFunc) {Math.random()<x?trueFunc():falseFunc();}
+function coinFlip(x, trueFunc, falseFunc) {
+	Math.random() < x ? trueFunc() : falseFunc();
+}
 
 module.exports = exports = {
 	cloudController: {
@@ -14,22 +16,28 @@ module.exports = exports = {
 			vms[id] = {
 				id: '' + id
 			};
-			setTimeout(function() {
-				callback(vms[id]);
-			}, 2000);
+			coinFlip(0.8, function () {
+				setTimeout(function () {
+					callback(null, vms[id]);
+				}, 2000);
+			}, function () {
+				setTimeout(function () {
+					callback("Failed to boot VM. (test)");
+				}, 2000);
+			})
 
-			coinFlip(0.6, function() {
-				setTimeout(function() {
-					rpc.connect(9090, 'localhost', function(remote, conn) {
-						remote.checkin(vmid, function() {
+			coinFlip(0.6, function () {
+				setTimeout(function () {
+					rpc.connect(9090, 'localhost', function (remote, conn) {
+						remote.checkin(vmid, function () {
 							conn.end();
 							conn.destroy();
 						});
 					});
 				}, 15000);
-			}, function() {
-				setTimeout(function() {
-					vms[id].status="ERROR";
+			}, function () {
+				setTimeout(function () {
+					vms[id].status = "ERROR";
 				}, 4000);
 			})
 		},
@@ -37,12 +45,12 @@ module.exports = exports = {
 			setTimeout(callback, 1000);
 		},
 		getServer: function (id, callback) {
-			setTimeout(function() {
+			setTimeout(function () {
 				callback(vms[id]);
 			}, 1000);
 		},
 		assignIP: function (id, callback) {
-			setTimeout(function() {
+			setTimeout(function () {
 				callback(null, id);
 			}, 2000);
 		},
@@ -50,45 +58,45 @@ module.exports = exports = {
 			setTimeout(callback, 1000);
 		},
 		getIPFromServer: function (server) {
-			return server.id;
+			return server == null ? null : server.id;
 		},
-		getNameFromServer: function(server) {
-			return server.name;
+		getNameFromServer: function (server) {
+			return server == null ? null : server.name;
 		},
-		getIDFromServer: function(server) {
-			return server.id;
+		getIDFromServer: function (server) {
+			return server == null ? null : server.id;
 		},
-		getAllServers: function(id, callback) {
+		getAllServers: function (id, callback) {
 			return [];
 		}
 	},
-	vmRpcInterface: function(){
+	vmRpcInterface: function () {
 		var state = VMStates.FREE;
 		return {
-			ping: function(callback) {
-				setTimeout(function() {
+			ping: function (callback) {
+				setTimeout(function () {
 					callback(state);
 				}, 400);
 			},
-			prepare: function(data, callback) {
+			prepare: function (data, callback) {
 				state = VMStates.WAIT;
-				setTimeout(function() {
-					coinFlip(0.6, function() {
+				setTimeout(function () {
+					coinFlip(0.6, function () {
 						state = VMStates.READY;
 						callback({vnc_passwd: 'mockpasswd', state: VMStates.READY});
-					}, function() {
+					}, function () {
 						state = VMStates.ERROR;
 						callback({state: VMStates.ERROR});
 					})
 				}, 6000);
 			},
-			cleanup: function(data, callback) {
+			cleanup: function (data, callback) {
 				state = VMStates.WAIT;
-				setTimeout(function() {
-					coinFlip(0.6, function() {
+				setTimeout(function () {
+					coinFlip(0.6, function () {
 						state = VMStates.FREE;
 						callback({state: VMStates.FREE});
-					}, function() {
+					}, function () {
 						state = VMStates.ERROR;
 						callback({state: VMStates.ERROR});
 					})

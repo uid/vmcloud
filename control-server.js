@@ -995,8 +995,9 @@ function runControlServer() {
 
 	app.get('/fetch-events/:handle/:lastid', function(req, res) {
 		var handle = parseInt(req.params.handle);
+		var lastId = parseInt(req.params.lastid);
 
-		waitForPendingEvent(handle, function (result){
+		waitForPendingEvent(handle, lastId, function (result){
 			res.send(result);
 		}, 5000);
 	});

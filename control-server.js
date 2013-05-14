@@ -768,6 +768,7 @@ function runPinger() {
 
 function runStrayVMRemover() {
 	setInterval(removeStrayVMs, 60000);
+	removeStrayVMs();
 }
 
 

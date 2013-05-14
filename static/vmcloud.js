@@ -59,7 +59,7 @@ var BeliefState = {
 
 
 					function fetchEvent() {
-						$.get(vmcloudRoot + 'fetch-events/'+handle, function(data) {
+						$.get(vmcloudRoot + 'fetch-events/'+handle + '/' + lastEventId, function(data) {
 							if (data.newEvents.length > 0) {
 								for(var i=0;i<data.newEvents.length;i++) {
 									eventCallback(data.newEvents[i]);

@@ -181,6 +181,7 @@ function bootNewVM() {
 			pool.remove(vmid);
 			delete vmData[vmid];
 		} else {
+			if (!_pool.contains(vmid)) return;
 			vmData[vmid].server = server;
 			vmData[vmid].state.verSet(0, BeliefState.BOOTING);
 			log("Successfully booted: " + vmid + ", Cloud instance id = " + cloudController.getIDFromServer(server)

@@ -62,7 +62,7 @@ var BeliefState = {
 						$.get(vmcloudRoot + 'fetch-events/'+handle + '/' + lastEventId, function(data) {
 							if (data.newEvents.length > 0) {
 								for(var i=0;i<data.newEvents.length;i++) {
-									eventCallback(data.newEvents[i]);
+									eventCallback(data.newEvents[i].data);
 								}
 							}
 							lastEventId = data.lastId;

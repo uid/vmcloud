@@ -30,7 +30,7 @@ var BeliefState = {
 (function($) {
 	$.fn.vmRemote = function(vmcloudRoot, handle, eventCallback) {
 		var target = this;
-		target.text("One moment while we prepare your task...");
+		target.text("<h1>One moment while we prepare your task...</h1>");
 		setTimeout(function check() {
 			$.get(vmcloudRoot + 'handle-status/'+handle, function(data) {
 				if (data.assigned) {

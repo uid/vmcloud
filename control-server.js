@@ -142,7 +142,7 @@ function loadAllStates(json) {
 	nextHandle = obj.nextHandle;
 	pendingLocks = obj.pendingLocks;
 	poolSize = obj.poolSize;
-	for(var i=0;i<pool.length;i++) {
+	for (var i = 0; i < pool.length; i++) {
 		var vmid = pool[i];
 		var vm = vmData[vmid];
 		vm.state = verState(vmid, vm.state.state);
@@ -155,7 +155,6 @@ function loadAllStates(json) {
 		}
 	}
 }
-
 
 
 function VMInfo(vmid) {
@@ -215,6 +214,7 @@ function updateInstanceInfoFromCloud(vmid, callback) {
 
 
 function checkinReceived(vmid, callback) {
+	if (!_.contains(pool, vmid)) return;
 	var vm = vmData[vmid];
 	var ver = vm.state.getVer();
 	updateInstanceInfoFromCloud(vmid, function () {
@@ -262,8 +262,9 @@ function prepareVM(vmid, data, callback) {
 }
 
 function cleanupVM(vmid, data, callback) {
-	if (!data) data= {};
-	if (!callback) callback = function(){};
+	if (!data) data = {};
+	if (!callback) callback = function () {
+	};
 	assert(_.contains(pool, vmid));
 	var vm = vmData[vmid];
 	assert(vm.state.get() == BeliefState.READY || vm.state.get() == BeliefState.OCCUPIED);
@@ -384,6 +385,7 @@ function lockVM(batchId) {
 		batchId: batchId,
 		handle: handle
 	});
+	checkRules();
 	return handle;
 }
 
@@ -408,11 +410,13 @@ function releaseVM(handle) {
 			}
 		}
 	}
+	checkRules();
 }
 
 function cancelBatch(batchId) {
 	batchData[batchId].size = 0;
 	batchData[batchId].markDelete = true;
+	checkRules();
 }
 
 function getVMInfo(vmid) {
@@ -457,8 +461,8 @@ var isCheckpointPending = false;
 function checkPointToDisk() {
 	if (!isWritingToDisk) {
 		var checkpointfile = config.control.checkpoint_file;
-		fs.writeFile(checkpointfile + ".temp", saveAllStates(), 'utf8', function() {
-			fs.rename(checkpointfile + ".temp", checkpointfile, function() {
+		fs.writeFile(checkpointfile + ".temp", saveAllStates(), 'utf8', function () {
+			fs.rename(checkpointfile + ".temp", checkpointfile, function () {
 				isWritingToDisk = false;
 				if (isCheckpointPending) {
 					isCheckpointPending = false;
@@ -611,27 +615,44 @@ function runRule_preparation() {
 }
 
 function runRule_lock() {
-	// Whenever an item (#B, #H) is in the pending locks list for which there is a VM #X for batch #B in the READY state
-	// Remove VM #X from the batch; decrement batch size; occupy VM #X, set vmid of #H (in the handle list) to #X
-	// and set it to ASSIGNED.
-	for (var i = 0; i < pendingLocks.length; i++) {
-		var item = pendingLocks[i];
-		var batchId = item.batchId;
-		var handle = item.handle;
-		var vms = batchData[batchId].vms;
-		for (var j = 0; j < vms.length; j++) {
-			var vmid = vms[j];
-			if (_.contains(pool, vmid) && vmData[vmid].state.get() == BeliefState.READY) {
-				pendingLocks.removeAt(i);
-				batchData[batchId].vms.removeAt(j);
-				occupyVM(vmid);
-				handleData[handle].assigned = true;
-				handleData[handle].vmid = vmid;
-				return true;
+	return function () {
+		// Whenever an item (#B, #H) is in the pending locks list for which there is a VM #X for batch #B in the READY state
+		// Remove VM #X from the batch; decrement batch size; occupy VM #X, set vmid of #H (in the handle list) to #X
+		// and set it to ASSIGNED.
+		for (var i = 0; i < pendingLocks.length; i++) {
+			var item = pendingLocks[i];
+			var batchId = item.batchId;
+			var handle = item.handle;
+			var vms = batchData[batchId].vms;
+			for (var j = 0; j < vms.length; j++) {
+				var vmid = vms[j];
+				if (_.contains(pool, vmid) && vmData[vmid].state.get() == BeliefState.READY) {
+					pendingLocks.removeAt(i);
+					batchData[batchId].vms.removeAt(j);
+					occupyVM(vmid);
+					handleData[handle].assigned = true;
+					handleData[handle].vmid = vmid;
+					return true;
+				}
 			}
 		}
-	}
-	return false;
+		return false;
+	}() || function () {
+
+		// Whenever a handle that is assigned has its VM no longer existing, remove the handle.
+		for (var i = 0; i < handles.length; i++) {
+			var handle = handles[i];
+			if (handleData[handle].assigned) {
+				var vmid = handleData[handle].vmid;
+				if (!_.contains(pool, vmid)) {
+					handles.removeAt(i);
+					delete handleData[handle];
+					return true;
+				}
+			}
+		}
+		return false;
+	}();
 }
 
 function runRule_release() {
@@ -648,12 +669,12 @@ function runRule_release() {
 		var batchId = batches[i];
 		var batch = batchData[batchId];
 		var pendingLocksCount = 0;
-		for (var k = 0; k<pendingLocks.length;k++) {
+		for (var k = 0; k < pendingLocks.length; k++) {
 			if (pendingLocks[k].batchId == batchId) pendingLocksCount++;
 		}
 		var occurancesInPrepQueue = 0;
 		var anOccurance = -1;
-		for(k=0;k<prepQueue.length;k++) {
+		for (k = 0; k < prepQueue.length; k++) {
 			if (prepQueue[k] == batchId) {
 				occurancesInPrepQueue++;
 				anOccurance = k;
@@ -723,7 +744,7 @@ function runRule_batchCleanup() {
 
 function runRule_handleExpire() {
 	var time = Date.now();
-	for (var i=0;i<handles.length;i++) {
+	for (var i = 0; i < handles.length; i++) {
 		var handleId = handles[i];
 		var handle = handleData[handleId];
 		if (handle.expires) {
@@ -737,8 +758,8 @@ function runRule_handleExpire() {
 }
 
 function removeStrayVMs() {
-	cloudController.getAllServers(function(data) {
-		_.each(data, function(server) {
+	cloudController.getAllServers(function (data) {
+		_.each(data, function (server) {
 			var name = cloudController.getNameFromServer(server);
 			if (name.indexOf(config.openstack.instance_name_prefix) == 0) {
 				var trail = name.substring(config.openstack.instance_name_prefix.length);
@@ -746,11 +767,13 @@ function removeStrayVMs() {
 				var cloudId = cloudController.getIDFromServer(server);
 				if (!_.contains(pool, vmid)) {
 					log("Removing stray VM " + name + " with ID " + cloudId);
-					cloudController.kill(cloudId, function(){});
+					cloudController.kill(cloudId, function () {
+					});
 				} else {
 					if (cloudController.getIDFromServer(vmData[vmid].server) != cloudId) {
 						log("Removing stray VM " + name + " with ID " + cloudId);
-						cloudController.kill(cloudId, function(){});
+						cloudController.kill(cloudId, function () {
+						});
 					}
 				}
 			}
@@ -776,14 +799,14 @@ function EventWindow() {
 	this.offset = 0;
 	this.window = [];
 	this.pendingWaits = [];
-	this.addEvent = function(event) {
+	this.addEvent = function (event) {
 		var curTime = Date.now();
 		this.window.push({
 			time: curTime,
 			data: event
 		});
 
-		for(var i=0;i<this.pendingWaits.length;i++) {
+		for (var i = 0; i < this.pendingWaits.length; i++) {
 			this.pendingWaits[i]();
 		}
 		this.pendingWaits.length = 0;
@@ -800,7 +823,7 @@ function EventWindow() {
 		}
 	};
 
-	this.getEvents = function(lastKnownId) {
+	this.getEvents = function (lastKnownId) {
 		var lastId = this.getLastId();
 		if (lastId <= lastKnownId) {
 			return {
@@ -815,11 +838,11 @@ function EventWindow() {
 		}
 	};
 
-	this.getLastId = function() {
+	this.getLastId = function () {
 		return this.window.length - 1 + this.offset;
 	};
 
-	this.waitForEvents = function(lastKnownId, maxWait, callback) {
+	this.waitForEvents = function (lastKnownId, maxWait, callback) {
 		var _this = this;
 		var events = this.getEvents(lastKnownId);
 		if (events.newEvents.length > 0) {
@@ -869,7 +892,7 @@ function runControlServer() {
 		browser_event: function (vmid, data, callback) {
 			vlog("Browser event received: " + JSON.stringify(data));
 			var handle = null;
-			for(var i=0;i<handles.length;i++) {
+			for (var i = 0; i < handles.length; i++) {
 				if (handleData[handles[i]].vmid == vmid) {
 					handle = handles[i];
 					break;
@@ -946,7 +969,7 @@ function runControlServer() {
 		res.send('');
 	});
 
-	app.post('/renew-expire/:handle/:time', function(req, res) {
+	app.post('/renew-expire/:handle/:time', function (req, res) {
 		//log('Received web request to renew and schedule for expiration handle #'
 		//	+ req.params.handle + ' after ' + req.params.time + 'ms');
 		var handle = parseInt(req.params.handle);
@@ -994,19 +1017,19 @@ function runControlServer() {
 		res.send('');
 	});
 
-	app.get('/fetch-events/:handle/:lastid', function(req, res) {
+	app.get('/fetch-events/:handle/:lastid', function (req, res) {
 		var handle = parseInt(req.params.handle);
 		var lastId = parseInt(req.params.lastid);
 
-		waitForPendingEvent(handle, lastId, function (result){
+		waitForPendingEvent(handle, lastId, function (result) {
 			res.send(result);
 		}, 5000);
 	});
 
-	app.get('/last-event-id/:handle', function(req, res) {
+	app.get('/last-event-id/:handle', function (req, res) {
 		var handle = parseInt(req.params.handle);
 
-		res.send(''+getHandleEventsLastId(handle));
+		res.send('' + getHandleEventsLastId(handle));
 	});
 
 	app.get('/all-status', function (req, res) {
@@ -1040,6 +1063,20 @@ function runControlServer() {
 		};
 
 		res.send(JSON.stringify(result));
+	});
+
+	app.post('/shutdown', function (req, res) {
+		var handlesToRelease = handles.slice(0);
+		var batchesToCancel = batches.slice(0);
+		for (var i = 0; i < handlesToRelease.length; i++) {
+			var handle = handlesToRelease[i];
+			releaseVM(handle);
+		}
+		for (var i = 0; i < batchesToCancel.length; i++) {
+			var batch = batchesToCancel[i];
+			cancelBatch(batch);
+		}
+		setPoolSize(0, 0, 0);
 	});
 
 	app.use('/static', express.static(__dirname + '/static'));

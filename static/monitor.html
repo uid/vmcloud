@@ -137,6 +137,12 @@
                 method: 'POST',
                 names: ['VM Handle'],
                 command: "Release VM"
+            }, {
+                title: 'SHUTDOWN AND TERMINATE ALL VM, BATCHES, AND LOCKS',
+                path: '/shutdown',
+                method: 'POST',
+                names: [],
+                command: "SHUTDOWN VMCLOUD"
             }].forEach(function(item) {
                 $("#restInterfaces").append(restInterface(item.title, item.path, item.method, item.names, item.command));
             });
